@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chief of Staff - Premium Recruitment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- GSAP - Professional Animation Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollSmoother.min.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* Smooth scroll container */
+    #smooth-wrapper {
+      overflow: hidden;
+    }
+
+    #smooth-content {
+      overflow: visible;
+      width: 100%;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 30px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      mix-blend-mode: difference;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: #fff;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      position: relative;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover {
+      opacity: 0.7;
+    }
+
+    /* Hero with Video Background */
+    .hero {
+      height: 100vh;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-video-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      opacity: 0.4;
+      filter: blur(3px);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.9) 100%);
+      z-index: 1;
+      mix-blend-mode: multiply;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 0 20px;
+      max-width: 1400px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      padding: 12px 24px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 12px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .hero h1 {
+      font-size: clamp(60px, 10vw, 180px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 .line {
+      display: block;
+      overflow: hidden;
+    }
+
+    .hero h1 .line span {
+      display: block;
+      transform: translateY(100%);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 32px);
+      font-weight: 300;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 0 auto 60px;
+      opacity: 0;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      gap: 20px;
+      opacity: 0;
+    }
+
+    .btn {
+      padding: 22px 50px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: #000;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .btn-primary:hover::before {
+      opacity: 1;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05);
+      color: #fff;
+    }
+
+    .btn-primary span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Scroll indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .scroll-indicator::after {
+      content: '';
+      width: 1px;
+      height: 60px;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent);
+      animation: scrollDown 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollDown {
+      0% { opacity: 0; transform: translateY(-20px); }
+      50% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(20px); }
+    }
+
+    /* Stats Section with Parallax */
+    .stats-section {
+      padding: 200px 60px;
+      background: #0a0a0a;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats-bg {
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80') center/cover;
+      opacity: 0.05;
+      filter: grayscale(100%);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 80px;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-item {
+      text-align: center;
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    .stat-number {
+      font-size: clamp(60px, 8vw, 120px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .stat-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Content Section with Image Parallax */
+    .content-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 200px 60px;
+      background: #000;
+      position: relative;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 100px;
+      max-width: 1600px;
+      margin: 0 auto;
+      align-items: center;
+    }
+
+    .content-image {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      height: 600px;
+    }
+
+    .content-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.2);
+    }
+
+    .content-text h2 {
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 40px;
+      letter-spacing: -0.02em;
+    }
+
+    .content-text p {
+      font-size: 20px;
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 30px;
+    }
+
+    /* Magnetic cursor effect */
+    .magnetic {
+      transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px; }
+      .hero h1 { font-size: 48px; }
+      .stats-section { padding: 100px 20px; }
+      .content-grid { grid-template-columns: 1fr; gap: 60px; }
+      .content-section { padding: 100px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="smooth-wrapper">
+    <div id="smooth-content">
+      <!-- Navigation -->
+      <nav>
+        <div class="logo">Chief of Staff</div>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/articles">Articles</a></li>
+          <li><a href="/companies">Companies</a></li>
+        </ul>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="hero">
+        <!-- Video Background -->
+        <video class="hero-video-bg" autoplay loop muted playsinline>
+          <source src="https://cdn.coverr.co/videos/coverr-aerial-view-of-beautiful-resort-2389/1080p.mp4" type="video/mp4">
+        </video>
+
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+          <div class="hero-badge">The Definitive Industry Resource</div>
+
+          <h1>
+            <div class="line"><span>Ultimate Guide</span></div>
+            <div class="line"><span>to Chief of Staff</span></div>
+            <div class="line"><span>Recruitment</span></div>
+          </h1>
+
+          <p class="hero-subtitle">
+            Comprehensive analysis of top recruitment firms, selection criteria,<br>
+            salary benchmarks, and career advancement strategies for 2025.
+          </p>
+
+          <div class="hero-cta">
+            <a href="/companies" class="btn btn-primary magnetic"><span>Explore Agencies →</span></a>
+            <a href="/articles" class="btn btn-secondary magnetic">Read Insights</a>
+          </div>
+        </div>
+
+        <div class="scroll-indicator">Scroll</div>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="stats-section">
+        <div class="stats-bg"></div>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-number" data-count="50">0</div>
+            <div class="stat-label">Top Agencies</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-count="250">0</div>
+            <div class="stat-label">Salary Insights</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" data-count="100">0</div>
+            <div class="stat-label">Career Paths</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Content Section with Parallax Image -->
+      <section class="content-section">
+        <div class="content-grid">
+          <div class="content-image parallax-img">
+            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80" alt="Modern Office">
+          </div>
+          <div class="content-text">
+            <h2>Elite Recruitment Partnerships</h2>
+            <p>Connect with the world's leading Chief of Staff and Executive Assistant recruitment agencies. Our comprehensive directory features verified agencies with proven track records.</p>
+            <p>From Fortune 500 companies to innovative startups, discover recruitment partners who understand your unique needs and deliver exceptional talent.</p>
+            <a href="/companies" class="btn btn-primary magnetic"><span>View Directory →</span></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // GSAP Animations
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Animate hero title lines
+    gsap.to('.hero h1 .line span', {
+      y: 0,
+      duration: 1.2,
+      stagger: 0.15,
+      ease: 'power4.out',
+      delay: 0.3
+    });
+
+    // Animate hero subtitle
+    gsap.to('.hero-subtitle', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      delay: 1.2,
+      ease: 'power3.out'
+    });
+
+    // Animate hero CTA
+    gsap.to('.hero-cta', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      delay: 1.5,
+      ease: 'power3.out'
+    });
+
+    // Parallax video background
+    gsap.to('.hero-video-bg', {
+      scale: 1.2,
+      scrollTrigger: {
+        trigger: '.hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1
+      }
+    });
+
+    // Animate stats on scroll
+    gsap.utils.toArray('.stat-item').forEach((stat, i) => {
+      gsap.to(stat, {
+        opacity: 1,
+        y: 0,
+        duration: 1,
+        delay: i * 0.2,
+        scrollTrigger: {
+          trigger: stat,
+          start: 'top 80%',
+        }
+      });
+
+      // Counter animation
+      const number = stat.querySelector('.stat-number');
+      const target = parseInt(number.getAttribute('data-count'));
+
+      ScrollTrigger.create({
+        trigger: stat,
+        start: 'top 80%',
+        once: true,
+        onEnter: () => {
+          gsap.to(number, {
+            innerHTML: target,
+            duration: 2,
+            snap: { innerHTML: 1 },
+            ease: 'power2.out'
+          });
+        }
+      });
+    });
+
+    // Parallax image
+    gsap.to('.parallax-img img', {
+      yPercent: -20,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.content-section',
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1
+      }
+    });
+
+    // Magnetic button effect
+    document.querySelectorAll('.magnetic').forEach(button => {
+      button.addEventListener('mousemove', (e) => {
+        const rect = button.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        gsap.to(button, {
+          x: x * 0.3,
+          y: y * 0.3,
+          duration: 0.3
+        });
+      });
+
+      button.addEventListener('mouseleave', () => {
+        gsap.to(button, {
+          x: 0,
+          y: 0,
+          duration: 0.5
+        });
+      });
+    });
+
+    // Smooth reveal on load
+    gsap.from('body', {
+      opacity: 0,
+      duration: 0.5,
+      ease: 'power2.out'
+    });
+  </script>
+</body>
+</html>

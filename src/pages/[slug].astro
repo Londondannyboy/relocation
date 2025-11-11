@@ -1,0 +1,213 @@
+---
+import { sql } from '../lib/db';
+import { marked } from 'marked';
+import { insertImagesIntoHTML } from '../lib/insertImages';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+// Handle sitemap.xml directly
+if (slug === 'sitemap.xml') {
+  const siteUrl = (Astro.site?.toString() || 'https://chiefofstaff.quest').replace(/\/$/, '');
+
+  const articles = await sql`SELECT slug, published_at, updated_at, created_at FROM articles WHERE app = 'chief-of-staff' AND status = 'published'`;
+  const companies = await sql`SELECT slug, updated_at, created_at FROM companies WHERE app = 'chief-of-staff' AND status = 'published'`;
+  const now = new Date().toISOString();
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${siteUrl}/</loc><lastmod>${now}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>${siteUrl}/articles</loc><lastmod>${now}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>${siteUrl}/companies</loc><lastmod>${now}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>${articles.map((a: any) => `
+  <url><loc>${siteUrl}/${a.slug}</loc><lastmod>${new Date(a.updated_at || a.published_at || a.created_at).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`).join('')}${companies.map((c: any) => `
+  <url><loc>${siteUrl}/companies/${c.slug}</loc><lastmod>${new Date(c.updated_at || c.created_at).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`).join('')}
+</urlset>`;
+
+  return new Response(sitemap, { status: 200, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
+}
+
+// Configure marked for better formatting
+marked.setOptions({
+  breaks: false,  // Don't convert single \n to <br> (proper paragraph spacing)
+  gfm: true,      // GitHub Flavored Markdown
+});
+
+// Fetch the article with images - supporting both JSONB column and legacy tables
+const articleResult = await sql`
+  SELECT
+    a.id,
+    a.title,
+    a.content,
+    a.excerpt,
+    a.slug,
+    a.published_at,
+    a.created_at,
+    a.article_angle,
+    a.word_count,
+    a.images,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'hero'
+      LIMIT 1
+    ) as hero_image_legacy,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'content'
+      LIMIT 1
+    ) as content_image_legacy,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'content2'
+      LIMIT 1
+    ) as content2_image_legacy,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'content3'
+      LIMIT 1
+    ) as content3_image_legacy,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'content4'
+      LIMIT 1
+    ) as content4_image_legacy
+  FROM articles a
+  WHERE a.slug = ${slug}
+    AND a.app = 'chief-of-staff'
+  LIMIT 1
+`;
+
+const article = articleResult[0];
+
+if (!article) {
+  return Astro.redirect('/');
+}
+
+// Parse markdown to HTML
+const baseHtml = marked(article.content);
+
+// Intelligently insert images before H2/H3 headings
+const html = insertImagesIntoHTML(baseHtml, article.images, {
+  content_image_legacy: article.content_image_legacy,
+  content2_image_legacy: article.content2_image_legacy,
+  content3_image_legacy: article.content3_image_legacy,
+  content4_image_legacy: article.content4_image_legacy
+});
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{article.title} - Chief of Staff</title>
+  <meta name="description" content={article.excerpt || article.title}>
+</head>
+<body class="bg-gray-50">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-blue-600">
+            <a href="/">Chief of Staff</a>
+          </h1>
+        </div>
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Article Content -->
+  <article class="py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Article Header -->
+      <header class="mb-8">
+        {article.article_angle && (
+          <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-4">
+            {article.article_angle}
+          </span>
+        )}
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+          {article.title}
+        </h1>
+        {article.excerpt && (
+          <p class="text-xl text-gray-600 mb-6 leading-relaxed">
+            {article.excerpt}
+          </p>
+        )}
+        <div class="flex items-center text-sm text-gray-500 space-x-4 mb-8">
+          <time datetime={article.published_at || article.created_at}>
+            {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </time>
+          <span>•</span>
+          <span>{article.word_count} words</span>
+        </div>
+
+        <!-- Hero Image - Check both new JSONB column and legacy tables -->
+        {(article.images?.hero || article.hero_image_legacy?.url) && (
+          <div class="mb-8">
+            <img
+              src={article.images?.hero || article.hero_image_legacy.url}
+              alt={article.hero_image_legacy?.alt || article.title}
+              class="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        )}
+      </header>
+
+      <!-- Article Body -->
+      <div class="bg-white rounded-lg shadow-sm p-8 md:p-12">
+        <div
+          set:html={html}
+          class="prose prose-lg prose-blue max-w-none
+                 prose-headings:font-bold prose-headings:text-gray-900
+                 prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
+                 prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
+                 prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-8
+                 prose-a:text-blue-600 prose-a:font-bold prose-a:underline hover:prose-a:text-blue-800
+                 prose-strong:text-gray-900 prose-strong:font-semibold
+                 prose-ul:my-8 prose-ul:list-disc prose-ul:pl-6
+                 prose-ol:my-8 prose-ol:list-decimal prose-ol:pl-6
+                 prose-li:mb-3 prose-li:text-gray-700
+                 prose-blockquote:border-l-4 prose-blockquote:border-blue-600 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-8
+                 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm"
+        />
+      </div>
+
+      <!-- Back Link -->
+      <div class="mt-12">
+        <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+          ← Back to articles
+        </a>
+      </div>
+    </div>
+  </article>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <p class="text-gray-400">© {new Date().getFullYear()} Chief of Staff. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

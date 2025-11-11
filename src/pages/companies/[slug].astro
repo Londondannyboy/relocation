@@ -1,0 +1,393 @@
+---
+import { sql } from '../../lib/db';
+
+const { slug } = Astro.params;
+
+// Determine site context based on domain/path
+const isPlacementSite = Astro.url.hostname.includes('placement');
+const isChiefOfStaffSite = Astro.url.hostname.includes('chiefofstaff') || Astro.url.pathname.includes('chiefofstaff');
+
+// SEO anchor text variations
+const placementAnchorTexts = [
+  "View all leading placement agents",
+  "Top private equity placement agents",
+  "Best placement agents directory",
+  "Complete list of placement agents",
+  "Leading fund placement firms"
+];
+
+const recruiterAnchorTexts = [
+  "View all leading recruitment agencies",
+  "Top executive assistant recruiters",
+  "Best recruitment agencies directory",
+  "Complete list of chief of staff recruiters",
+  "Leading executive recruitment firms"
+];
+
+const anchorTexts = isPlacementSite ? placementAnchorTexts : recruiterAnchorTexts;
+const anchorText = anchorTexts[Math.floor(Math.random() * anchorTexts.length)];
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+// Fetch the company profile
+const companyResult = await sql`
+  SELECT
+    id,
+    name,
+    slug,
+    type,
+    company_type,
+    description,
+    founded_year,
+    headquarters,
+    website,
+    phone,
+    website_url,
+    logo_url,
+    header_image_url,
+    global_rank,
+    regional_ranks,
+    specializations,
+    capital_raised_total,
+    funds_served,
+    overview,
+    key_facts,
+    status,
+    created_at,
+    updated_at,
+    geographic_focus,
+    notable_deals
+  FROM companies
+  WHERE slug = ${slug}
+    AND (company_type IN ('placement_agent', 'executive_assistant_recruiters') OR type = 'placement_agent')
+    AND status = 'published'
+  LIMIT 1
+`;
+
+const company = companyResult[0];
+
+if (!company) {
+  return Astro.redirect('/');
+}
+
+// Determine company category for template labels
+const isRecruiter = company.company_type === 'executive_assistant_recruiters';
+const companyTypeLabel = isRecruiter ? 'Executive Recruiter' : 'Placement Agent';
+const siteTitle = isRecruiter ? 'Chief of Staff' : 'Placement';
+
+// Parse key_facts if it's JSONB
+const keyFacts = typeof company.key_facts === 'string'
+  ? JSON.parse(company.key_facts)
+  : company.key_facts;
+
+const services = keyFacts?.services || [];
+const achievements = keyFacts?.achievements || [];
+const people = keyFacts?.people || [];
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{company.name} - {companyTypeLabel} Profile | {siteTitle}</title>
+  <meta name="description" content={company.description || `${company.name} - Leading ${companyTypeLabel.toLowerCase()} profile`}>
+</head>
+<body class="bg-gray-50">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-blue-600">
+            <a href="/">{siteTitle}</a>
+          </h1>
+        </div>
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
+          <a href="/companies" class="text-blue-600 font-medium">Companies</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Company Profile -->
+  <article class="py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Header Section -->
+      <header class="bg-white rounded-lg shadow-sm p-8 mb-8">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <!-- Company Logo -->
+            {company.logo_url && (
+              <div class="mb-6">
+                <img
+                  src={company.logo_url}
+                  alt={`${company.name} logo`}
+                  class="h-16 w-auto"
+                />
+              </div>
+            )}
+
+            <!-- Company Name & Type -->
+            <div class="mb-4">
+              <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-3">
+                {companyTypeLabel}
+              </span>
+              <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-3 leading-tight">
+                {company.name}
+              </h1>
+              {company.description && (
+                <p class="text-xl text-gray-600 leading-relaxed">
+                  {company.description}
+                </p>
+              )}
+            </div>
+
+            <!-- Quick Facts -->
+            <div class="flex flex-wrap gap-6 text-sm text-gray-600 mt-6">
+              {company.founded_year && (
+                <div class="flex items-center">
+                  <span class="font-semibold mr-2">Founded:</span>
+                  <span>{company.founded_year}</span>
+                </div>
+              )}
+              {company.headquarters && company.headquarters !== 'Unavailable from provided context' && (
+                <div class="flex items-center">
+                  <span class="font-semibold mr-2">Headquarters:</span>
+                  <span>{company.headquarters}</span>
+                </div>
+              )}
+              {(company.website_url || company.website) && (company.website_url !== 'Unavailable from provided context') && (
+                <div class="flex items-center">
+                  <span class="font-semibold mr-2">Website:</span>
+                  <a href={company.website_url || company.website} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">
+                    {(company.website_url || company.website).replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </a>
+                </div>
+              )}
+              {company.phone && (
+                <div class="flex items-center">
+                  <span class="font-semibold mr-2">Phone:</span>
+                  <a href={`tel:${company.phone}`} class="text-blue-600 hover:underline">
+                    {company.phone}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <!-- Ranking Badge (if available) -->
+          {company.global_rank && (
+            <div class="ml-8">
+              <div class="bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-lg p-6 text-center min-w-[120px]">
+                <div class="text-3xl font-bold">#{company.global_rank}</div>
+                <div class="text-sm mt-1 opacity-90">Global Rank</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column - Main Content -->
+        <div class="lg:col-span-2 space-y-8">
+
+          <!-- Overview Section -->
+          {company.overview && (
+            <section class="bg-white rounded-lg shadow-sm p-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
+              <div class="prose prose-lg max-w-none">
+                <p class="text-gray-700 leading-relaxed">{company.overview}</p>
+              </div>
+            </section>
+          )}
+
+          <!-- Specializations Section -->
+          {company.specializations && company.specializations.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-6">Specializations</h2>
+              <div class="flex flex-wrap gap-2">
+                {company.specializations.map((spec: string) => (
+                  <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    {spec}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- Services Section -->
+          {services.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-6">Key Services</h2>
+              <ul class="space-y-3">
+                {services.map((service: string) => (
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-gray-700">{service}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <!-- Notable Deals Section -->
+          {company.notable_deals && company.notable_deals.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-6">Notable Deals & Transactions</h2>
+              <ul class="space-y-4">
+                {company.notable_deals.map((deal: any) => (
+                  <li class="border-l-4 border-blue-600 pl-4 py-2">
+                    <div class="text-gray-900 font-medium">{typeof deal === 'string' ? deal : deal.title || deal.deal_name}</div>
+                    {typeof deal !== 'string' && deal.description && (
+                      <div class="text-gray-600 text-sm mt-1">{deal.description}</div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <!-- Achievements Section -->
+          {achievements.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-8">
+              <h2 class="text-2xl font-bold text-gray-900 mb-6">Notable Achievements</h2>
+              <ul class="space-y-3">
+                {achievements.map((achievement: string) => (
+                  <li class="flex items-start">
+                    <svg class="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-gray-700">{achievement}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+
+        <!-- Right Column - Sidebar -->
+        <div class="space-y-8">
+
+          <!-- Key Metrics -->
+          {(company.capital_raised_total || company.funds_served) && (
+            <section class="bg-white rounded-lg shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Key Metrics</h3>
+              <div class="space-y-4">
+                {company.capital_raised_total && (
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">Total Capital Raised</div>
+                    <div class="text-2xl font-bold text-gray-900">
+                      ${(company.capital_raised_total / 1000000000).toFixed(1)}B
+                    </div>
+                  </div>
+                )}
+                {company.funds_served && (
+                  <div>
+                    <div class="text-sm text-gray-600 mb-1">Funds Served</div>
+                    <div class="text-2xl font-bold text-gray-900">{company.funds_served}+</div>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          <!-- Geographic Focus -->
+          {company.geographic_focus && company.geographic_focus.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Geographic Focus</h3>
+              <div class="space-y-2">
+                {company.geographic_focus.map((region: string) => (
+                  <div class="text-gray-700">{region}</div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- Leadership Team -->
+          {people.length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Leadership Team</h3>
+              <div class="space-y-3">
+                {people.map((person: any) => (
+                  <div>
+                    <div class="font-medium text-gray-900">{person.name}</div>
+                    {person.title && <div class="text-sm text-gray-600">{person.title}</div>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- Regional Rankings -->
+          {company.regional_ranks && Object.keys(company.regional_ranks).length > 0 && (
+            <section class="bg-white rounded-lg shadow-sm p-6">
+              <h3 class="text-lg font-bold text-gray-900 mb-4">Regional Rankings</h3>
+              <div class="space-y-3">
+                {Object.entries(company.regional_ranks).map(([region, rank]) => (
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-700">{region}</span>
+                    <span class="font-bold text-blue-600">#{rank}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+
+      <!-- Back Link with SEO -->
+      <div class="mt-12">
+        <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+          ← {anchorText}
+        </a>
+      </div>
+    </div>
+  </article>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div>
+          <h3 class="text-lg font-bold mb-4">{siteTitle}</h3>
+          <p class="text-gray-400 text-sm">
+            {isRecruiter
+              ? 'Your source for Chief of Staff and Executive Assistant recruitment insights and industry news.'
+              : 'Your source for private equity placement agent insights and industry news.'}
+          </p>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold mb-4">Navigate</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/" class="text-gray-400 hover:text-white">Home</a></li>
+            <li><a href="/articles" class="text-gray-400 hover:text-white">Articles</a></li>
+            <li><a href="/companies" class="text-gray-400 hover:text-white">Companies Directory</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold mb-4">Resources</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/companies" class="text-gray-400 hover:text-white">
+              {isRecruiter ? 'Top Executive Recruiters' : 'Top Placement Agents'}
+            </a></li>
+            <li><a href="/articles" class="text-gray-400 hover:text-white">Industry News</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 pt-8 text-center">
+        <p class="text-gray-400 text-sm">© {new Date().getFullYear()} {siteTitle}. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,120 @@
+---
+import { sql } from '../../lib/db';
+
+// Fetch all published articles with featured images
+const articles = await sql`
+  SELECT
+    a.id,
+    a.title,
+    a.excerpt,
+    a.slug,
+    a.published_at,
+    a.created_at,
+    a.article_angle,
+    a.word_count,
+    a.images,
+    (
+      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
+      FROM article_image_usage aiu
+      JOIN images i ON i.id = aiu.image_id
+      WHERE aiu.article_id = a.id AND aiu.role = 'featured'
+      LIMIT 1
+    ) as featured_image_legacy
+  FROM articles a
+  WHERE a.app = 'relocation'
+    AND a.status = 'published'
+  ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+`;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Articles - Relocation</title>
+</head>
+<body class="bg-gray-50">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-blue-600">
+            <a href="/">Relocation</a>
+          </h1>
+        </div>
+        <div class="flex items-center space-x-8">
+          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Articles Header -->
+  <section class="bg-white py-12 border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">All Articles</h1>
+      <p class="text-lg text-gray-600">Browse our complete collection of industry insights and news</p>
+    </div>
+  </section>
+
+  <!-- Articles Grid -->
+  <section class="py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {articles.map((article: any) => (
+          <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            {(article.images?.featured || article.featured_image_legacy?.url) && (
+              <img src={article.images?.featured || article.featured_image_legacy.url} alt={article.featured_image_legacy?.alt || article.title} class="w-full h-48 object-cover" />
+            )}
+            <div class="p-6">
+              {article.article_angle && (
+                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-3">
+                  {article.article_angle}
+                </span>
+              )}
+              <h2 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
+                <a href={`/${article.slug}`} class="hover:text-blue-600">
+                  {article.title}
+                </a>
+              </h2>
+              {article.excerpt && (
+                <p class="text-gray-600 mb-4 line-clamp-3">
+                  {article.excerpt}
+                </p>
+              )}
+              <div class="flex items-center justify-between text-sm text-gray-500">
+                <time datetime={article.published_at || article.created_at}>
+                  {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </time>
+                <a href={`/${article.slug}`} class="text-blue-600 hover:text-blue-800 font-medium">
+                  Read more →
+                </a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {articles.length === 0 && (
+        <div class="text-center py-12">
+          <p class="text-gray-600 text-lg">No articles published yet. Check back soon!</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <p class="text-gray-400">© {new Date().getFullYear()} Relocation. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

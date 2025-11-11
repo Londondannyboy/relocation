@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Animation Test - Chief of Staff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-30px); }
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 8s ease infinite;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .blob1 {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      filter: blur(80px);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .blob2 {
+      position: absolute;
+      bottom: 100px;
+      right: 100px;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      filter: blur(100px);
+      animation: float 10s ease-in-out infinite;
+      animation-delay: 2s;
+    }
+
+    .content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 0 20px;
+      max-width: 1200px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 40px;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 12px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .badge-text {
+      color: white;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    h1 {
+      font-size: clamp(40px, 8vw, 120px);
+      font-weight: 900;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 30px;
+      text-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: fadeInUp 1s ease-out 0.2s;
+      animation-fill-mode: both;
+    }
+
+    .subtitle {
+      font-size: clamp(20px, 3vw, 36px);
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 300;
+      line-height: 1.5;
+      margin-bottom: 50px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: fadeInUp 1s ease-out 0.4s;
+      animation-fill-mode: both;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeInUp 1s ease-out 0.6s;
+      animation-fill-mode: both;
+    }
+
+    .btn-primary {
+      background: white;
+      color: #667eea;
+      padding: 20px 50px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 18px;
+      text-decoration: none;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      color: white;
+      padding: 20px 50px;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 18px;
+      text-decoration: none;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      margin-top: 80px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: fadeInUp 1s ease-out 0.8s;
+      animation-fill-mode: both;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .stat:nth-child(2) {
+      border-left: 1px solid rgba(255, 255, 255, 0.3);
+      border-right: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .stat-number {
+      font-size: 56px;
+      font-weight: 900;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .banner {
+      background: #fbbf24;
+      color: #000;
+      text-align: center;
+      padding: 15px;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .stats {
+        gap: 20px;
+        margin-top: 60px;
+      }
+
+      .stat:nth-child(2) {
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 20px 0;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn-primary, .btn-secondary {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    🚀 STATIC TEST PAGE - If you see animations here, IT WORKS!
+  </div>
+
+  <section class="hero">
+    <div class="blob1"></div>
+    <div class="blob2"></div>
+
+    <div class="content">
+      <div class="badge">
+        <div class="dot"></div>
+        <span class="badge-text">The Definitive Industry Resource</span>
+      </div>
+
+      <h1>
+        ULTIMATE Guide to<br>
+        Chief of Staff &<br>
+        Executive Assistant<br>
+        Recruitment
+      </h1>
+
+      <p class="subtitle">
+        The ULTIMATE guide to the world's leading recruitment agencies.<br><br>
+
+        Comprehensive analysis of top firms, selection criteria, salary benchmarks, and career advancement strategies.
+      </p>
+
+      <div class="cta-buttons">
+        <a href="/companies" class="btn-primary">Get Started →</a>
+        <a href="/articles" class="btn-secondary">Read Articles</a>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-number">2025</div>
+          <div class="stat-label">Latest Data</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">Top</div>
+          <div class="stat-label">Agencies Ranked</div>
+        </div>
+        <div class="stat">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Comprehensive</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding: 100px 20px; background: white; text-align: center;">
+    <h2 style="font-size: 48px; font-weight: 900; color: #1f2937; margin-bottom: 30px;">
+      What You Should See Above
+    </h2>
+    <div style="max-width: 800px; margin: 0 auto; text-align: left; font-size: 18px; line-height: 1.8; color: #4b5563;">
+      <p style="margin-bottom: 20px;"><strong>✅ Yellow banner</strong> at the very top</p>
+      <p style="margin-bottom: 20px;"><strong>✅ Animated gradient background</strong> - Should be smoothly shifting between purple, pink, and blue</p>
+      <p style="margin-bottom: 20px;"><strong>✅ Pulsing green dot</strong> - The dot in the badge should fade in/out</p>
+      <p style="margin-bottom: 20px;"><strong>✅ Floating blurred shapes</strong> - Two large circles moving up/down slowly</p>
+      <p style="margin-bottom: 20px;"><strong>✅ Text fades in from below</strong> - Each element should appear with upward motion</p>
+      <p style="margin-bottom: 20px;"><strong>✅ Button hover effects</strong> - White button should scale up and lift when you hover</p>
+    </div>
+    <div style="margin-top: 60px;">
+      <a href="/" style="background: #667eea; color: white; padding: 18px 40px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 30px rgba(102,126,234,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+        ← Back to Homepage
+      </a>
+    </div>
+  </section>
+</body>
+</html>

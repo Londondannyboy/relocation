@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chief of Staff & Executive Assistant Recruitment Agencies 2025</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- HLS.js for Mux video -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #000;
+      color: #fff;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover { opacity: 0.6; }
+
+    /* Hero with Mux Video */
+    .hero {
+      height: 100vh;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.7; /* Much more visible */
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(0, 0, 0, 0.6)); /* Lighter overlay */
+      z-index: 1;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 0 40px;
+      max-width: 1400px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      padding: 12px 28px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 40px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .hero-badge::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      margin-right: 12px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 140px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      text-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.5vw, 28px);
+      font-weight: 300;
+      line-height: 1.7;
+      max-width: 900px;
+      margin: 0 auto 60px;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .btn {
+      padding: 20px 48px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: #667eea;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Stats Section with Image Background */
+    .stats-section {
+      padding: 200px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats-bg {
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=80') center/cover;
+      opacity: 0.15;
+    }
+
+    .stats-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(0, 0, 0, 0.9));
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 80px;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat-item {
+      text-align: center;
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    .stat-number {
+      font-size: clamp(60px, 8vw, 100px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .stat-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Image-Heavy Section (like Studio Tyrsa portfolio) */
+    .portfolio-section {
+      padding: 0;
+      background: #000;
+    }
+
+    .portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+    }
+
+    .portfolio-item {
+      position: relative;
+      height: 90vh;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .portfolio-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .portfolio-item:hover img {
+      transform: scale(1.05);
+    }
+
+    .portfolio-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 60px;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+
+    .portfolio-item:hover .portfolio-overlay {
+      opacity: 1;
+    }
+
+    .portfolio-title {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .portfolio-desc {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Companies Section with Video Background */
+    .companies-section {
+      padding: 200px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .companies-video-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    .companies-video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.25;
+    }
+
+    .companies-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(118, 75, 162, 0.85), rgba(0, 0, 0, 0.9));
+      z-index: 1;
+    }
+
+    .companies-content {
+      position: relative;
+      z-index: 2;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 100px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 900;
+      margin-bottom: 24px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .section-header p {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .companies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 40px;
+    }
+
+    .company-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    .company-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-8px);
+    }
+
+    .company-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 24px;
+    }
+
+    .company-name {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .company-location {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+
+    .company-description {
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.8;
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    .company-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      padding: 8px 16px;
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    /* Full-width Image Section (like OVA) */
+    .fullwidth-image-section {
+      height: 80vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fullwidth-image-section img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .fullwidth-image-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(102, 126, 234, 0.7), rgba(118, 75, 162, 0.7));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px;
+    }
+
+    .fullwidth-image-content h2 {
+      font-size: clamp(48px, 8vw, 100px);
+      font-weight: 900;
+      margin-bottom: 32px;
+      line-height: 1.1;
+      text-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .fullwidth-image-content p {
+      font-size: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Services Grid with Image Backgrounds */
+    .services-section {
+      padding: 200px 60px;
+      background: #000;
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 30px;
+      max-width: 1600px;
+      margin: 80px auto 0;
+    }
+
+    .service-card {
+      position: relative;
+      height: 500px;
+      border-radius: 20px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .service-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s;
+    }
+
+    .service-card:hover img {
+      transform: scale(1.1);
+    }
+
+    .service-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95), transparent);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 40px;
+    }
+
+    .service-title {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .service-desc {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.6;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 200px 60px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(48px, 7vw, 90px);
+      font-weight: 900;
+      margin-bottom: 32px;
+      line-height: 1.1;
+    }
+
+    .cta-section p {
+      font-size: 24px;
+      margin-bottom: 60px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer {
+      padding: 80px 60px 40px;
+      background: #000;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 12px;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: #fff;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 20px; }
+      .hero h1 { font-size: 42px; }
+      .stats-section, .companies-section, .services-section, .cta-section { padding: 100px 20px; }
+      .companies-grid { grid-template-columns: 1fr; gap: 30px; }
+      .portfolio-grid { grid-template-columns: 1fr; }
+      .portfolio-item { height: 60vh; }
+      .services-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">Chief of Staff</div>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/articles">Articles</a></li>
+      <li><a href="/companies">Companies</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero with Mux Video -->
+  <section class="hero">
+    <video id="hero-video" class="hero-video" autoplay loop muted playsinline></video>
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <div class="hero-badge">The Definitive Industry Resource</div>
+
+      <h1>
+        Ultimate Guide to<br>
+        Chief of Staff<br>
+        Recruitment
+      </h1>
+
+      <p class="hero-subtitle">
+        Comprehensive analysis of top recruitment firms, selection criteria,<br>
+        salary benchmarks, and career advancement strategies for 2025.
+      </p>
+
+      <div class="hero-cta">
+        <a href="/companies" class="btn btn-primary">Explore Agencies →</a>
+        <a href="/articles" class="btn btn-secondary">Read Insights</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats with Image Background -->
+  <section class="stats-section">
+    <div class="stats-bg"></div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-number">50+</div>
+        <div class="stat-label">Top Agencies</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">250K+</div>
+        <div class="stat-label">Salary Data Points</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">100+</div>
+        <div class="stat-label">Career Paths</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">2025</div>
+        <div class="stat-label">Latest Insights</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Portfolio-style Image Grid (like Studio Tyrsa) -->
+  <section class="portfolio-section">
+    <div class="portfolio-grid">
+      <div class="portfolio-item">
+        <img src="https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1200&q=80" alt="Executive Offices">
+        <div class="portfolio-overlay">
+          <div class="portfolio-title">Executive Leadership</div>
+          <div class="portfolio-desc">Connecting top-tier C-suite talent with forward-thinking organizations</div>
+        </div>
+      </div>
+      <div class="portfolio-item">
+        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80" alt="Strategic Planning">
+        <div class="portfolio-overlay">
+          <div class="portfolio-title">Strategic Excellence</div>
+          <div class="portfolio-desc">Building high-performing teams that drive business transformation</div>
+        </div>
+      </div>
+      <div class="portfolio-item">
+        <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=1200&q=80" alt="Professional Development">
+        <div class="portfolio-overlay">
+          <div class="portfolio-title">Career Development</div>
+          <div class="portfolio-desc">Empowering professionals to reach their full leadership potential</div>
+        </div>
+      </div>
+      <div class="portfolio-item">
+        <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1200&q=80" alt="Global Reach">
+        <div class="portfolio-overlay">
+          <div class="portfolio-title">Global Network</div>
+          <div class="portfolio-desc">Access to premier opportunities across international markets</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Full-width Image Section (like OVA) -->
+  <section class="fullwidth-image-section">
+    <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&q=80" alt="Modern Workspace">
+    <div class="fullwidth-image-overlay">
+      <div class="fullwidth-image-content">
+        <h2>Elite Partnerships</h2>
+        <p>
+          Connecting exceptional talent with world-class organizations through<br>
+          strategic recruitment and executive placement
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Companies with Video Background -->
+  <section class="companies-section">
+    <div class="companies-video-bg">
+      <video id="companies-video" autoplay loop muted playsinline></video>
+    </div>
+    <div class="companies-overlay"></div>
+
+    <div class="companies-content">
+      <div class="section-header">
+        <h2>Leading Recruitment Agencies</h2>
+        <p>Discover the world's premier Chief of Staff and Executive Assistant recruitment firms</p>
+      </div>
+
+      <div class="companies-grid">
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Campbell Lutyens</div>
+              <div class="company-location">📍 London, UK</div>
+            </div>
+          </div>
+          <p class="company-description">
+            Leading global and independent private markets advisor with expertise in executive placement and strategic talent acquisition across financial services.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Private Equity</span>
+            <span class="tag">Infrastructure</span>
+            <span class="tag">Executive Search</span>
+          </div>
+        </div>
+
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Odgers Berndtson</div>
+              <div class="company-location">📍 Global Network</div>
+            </div>
+          </div>
+          <p class="company-description">
+            International executive search firm specializing in senior-level appointments including Chief of Staff roles across diverse industries.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Executive Search</span>
+            <span class="tag">Leadership</span>
+            <span class="tag">C-Suite</span>
+          </div>
+        </div>
+
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Russell Reynolds</div>
+              <div class="company-location">📍 New York, USA</div>
+            </div>
+          </div>
+          <p class="company-description">
+            Premier leadership advisory and executive search firm with deep expertise in identifying transformational Chief of Staff talent.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Leadership Advisory</span>
+            <span class="tag">Global</span>
+            <span class="tag">Fortune 500</span>
+          </div>
+        </div>
+
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Spencer Stuart</div>
+              <div class="company-location">📍 Chicago, USA</div>
+            </div>
+          </div>
+          <p class="company-description">
+            Renowned executive search and leadership consulting firm connecting organizations with exceptional Chief of Staff professionals.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Executive Search</span>
+            <span class="tag">Leadership</span>
+            <span class="tag">Strategy</span>
+          </div>
+        </div>
+
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Korn Ferry</div>
+              <div class="company-location">📍 Los Angeles, USA</div>
+            </div>
+          </div>
+          <p class="company-description">
+            Global organizational consulting firm offering executive search and Chief of Staff recruitment with data-driven talent insights.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Organizational Consulting</span>
+            <span class="tag">Executive Search</span>
+          </div>
+        </div>
+
+        <div class="company-card">
+          <div class="company-header">
+            <div>
+              <div class="company-name">Heidrick & Struggles</div>
+              <div class="company-location">📍 Global Presence</div>
+            </div>
+          </div>
+          <p class="company-description">
+            Premier provider of executive search and leadership consulting services with specialized Chief of Staff practice.
+          </p>
+          <div class="company-tags">
+            <span class="tag">Executive Search</span>
+            <span class="tag">Leadership</span>
+            <span class="tag">Consulting</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services with Image Backgrounds -->
+  <section class="services-section">
+    <div class="section-header">
+      <h2>Our Services</h2>
+      <p>Comprehensive recruitment solutions tailored to your organization's needs</p>
+    </div>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=80" alt="Executive Search">
+        <div class="service-overlay">
+          <div class="service-title">Executive Search</div>
+          <div class="service-desc">Identifying and recruiting top-tier Chief of Staff talent for C-suite roles</div>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80" alt="Leadership Assessment">
+        <div class="service-overlay">
+          <div class="service-title">Leadership Assessment</div>
+          <div class="service-desc">Comprehensive evaluation and profiling of executive candidates</div>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80" alt="Talent Advisory">
+        <div class="service-overlay">
+          <div class="service-title">Talent Advisory</div>
+          <div class="service-desc">Strategic guidance on organizational structure and leadership needs</div>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80" alt="Market Insights">
+        <div class="service-overlay">
+          <div class="service-title">Market Insights</div>
+          <div class="service-desc">Comprehensive salary benchmarking and industry trend analysis</div>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=80" alt="Succession Planning">
+        <div class="service-overlay">
+          <div class="service-title">Succession Planning</div>
+          <div class="service-desc">Building robust leadership pipelines for long-term organizational success</div>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <img src="https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=800&q=80" alt="Onboarding Support">
+        <div class="service-overlay">
+          <div class="service-title">Onboarding Support</div>
+          <div class="service-desc">Ensuring seamless integration and success for new Chief of Staff hires</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <h2>Ready to Find Your<br>Perfect Match?</h2>
+    <p>
+      Connect with leading recruitment agencies and take the next step<br>
+      in your Chief of Staff career journey
+    </p>
+    <div class="hero-cta">
+      <a href="/companies" class="btn btn-primary">Browse Agencies</a>
+      <a href="/articles" class="btn btn-secondary">Read Our Guides</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Chief of Staff</h3>
+        <p style="color: rgba(255, 255, 255, 0.6); margin-top: 12px;">
+          The definitive guide to Chief of Staff and Executive Assistant recruitment.
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h3>Resources</h3>
+        <ul class="footer-links">
+          <li><a href="/articles">Articles & Insights</a></li>
+          <li><a href="/companies">Agency Directory</a></li>
+          <li><a href="/salary">Salary Guide</a></li>
+          <li><a href="/careers">Career Paths</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Company</h3>
+        <ul class="footer-links">
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms of Service</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h3>Connect</h3>
+        <ul class="footer-links">
+          <li><a href="https://linkedin.com">LinkedIn</a></li>
+          <li><a href="https://twitter.com">Twitter</a></li>
+          <li><a href="mailto:hello@chiefofstaff.quest">Email Us</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Chief of Staff. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Mux HLS video for hero
+    const heroVideo = document.getElementById('hero-video');
+    const heroVideoSrc = 'https://stream.mux.com/JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4.m3u8';
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(heroVideoSrc);
+      hls.attachMedia(heroVideo);
+      hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        heroVideo.play();
+      });
+    } else if (heroVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      heroVideo.src = heroVideoSrc;
+      heroVideo.addEventListener('loadedmetadata', function() {
+        heroVideo.play();
+      });
+    }
+
+    // Initialize Mux HLS video for companies section
+    const companiesVideo = document.getElementById('companies-video');
+    if (Hls.isSupported()) {
+      const hls2 = new Hls();
+      hls2.loadSource(heroVideoSrc); // Reusing same video, you can change later
+      hls2.attachMedia(companiesVideo);
+      hls2.on(Hls.Events.MANIFEST_PARSED, function() {
+        companiesVideo.play();
+      });
+    } else if (companiesVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      companiesVideo.src = heroVideoSrc;
+      companiesVideo.addEventListener('loadedmetadata', function() {
+        companiesVideo.play();
+      });
+    }
+
+    // GSAP Animations
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero animations
+    gsap.to('.hero-badge', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      delay: 0.3,
+      ease: 'power3.out'
+    });
+
+    gsap.to('.hero h1', {
+      opacity: 1,
+      y: 0,
+      duration: 1.2,
+      delay: 0.5,
+      ease: 'power3.out'
+    });
+
+    gsap.to('.hero-subtitle', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      delay: 0.8,
+      ease: 'power3.out'
+    });
+
+    gsap.to('.hero-cta', {
+      opacity: 1,
+      y: 0,
+      duration: 1,
+      delay: 1.1,
+      ease: 'power3.out'
+    });
+
+    // Stats animation
+    gsap.utils.toArray('.stat-item').forEach((stat, i) => {
+      gsap.to(stat, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        delay: i * 0.1,
+        scrollTrigger: {
+          trigger: stat,
+          start: 'top 85%'
+        }
+      });
+    });
+
+    // Companies cards animation
+    gsap.utils.toArray('.company-card').forEach((card, i) => {
+      gsap.to(card, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        delay: i * 0.1,
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 85%'
+        }
+      });
+    });
+
+    // Video parallax effect
+    gsap.to('.hero-video', {
+      scale: 1.2,
+      scrollTrigger: {
+        trigger: '.hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 1
+      }
+    });
+  </script>
+</body>
+</html>

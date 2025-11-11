@@ -1,0 +1,67 @@
+---
+// Auth callback handler - Stack Auth redirects here after authentication
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating...</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .loading {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <h2>Completing authentication...</h2>
+        <p>Please wait while we sign you in.</p>
+    </div>
+
+    <script>
+        // Handle the callback from Stack Auth
+        async function handleCallback() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const authToken = urlParams.get('access_token') || urlParams.get('token');
+                const code = urlParams.get('code');
+
+                console.log('Callback received, auth token:', authToken, 'code:', code);
+
+                if (authToken) {
+                    // Store the auth token
+                    localStorage.setItem('stack-auth-token', authToken);
+                    document.cookie = `stack-auth-token=${authToken}; path=/; max-age=2592000; SameSite=Lax`;
+
+                    // Redirect to profile
+                    window.location.href = '/profile';
+                } else if (code) {
+                    // Exchange code for token
+                    console.log('Need to exchange code for token');
+                    // For now, redirect to profile and let it handle auth
+                    window.location.href = '/profile';
+                } else {
+                    console.error('No auth token or code in callback');
+                    window.location.href = '/auth/signin';
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                window.location.href = '/auth/signin';
+            }
+        }
+
+        handleCallback();
+    </script>
+</body>
+</html>

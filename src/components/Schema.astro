@@ -1,0 +1,104 @@
+---
+import { siteConfig } from '../config/site';
+
+interface Props {
+  type?: 'homepage' | 'article' | 'company';
+  article?: any;
+  company?: any;
+}
+
+const { type = 'homepage', article, company } = Astro.props;
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  logo: `${siteConfig.url}/logo.png`,
+  description: siteConfig.description,
+  sameAs: [
+    siteConfig.links.twitter,
+    siteConfig.links.linkedin,
+  ],
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteConfig.name,
+  url: siteConfig.url,
+  description: siteConfig.description,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteConfig.url}/search?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: siteConfig.url,
+    },
+  ],
+};
+
+let articleSchema;
+if (type === 'article' && article) {
+  articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.excerpt || article.title,
+    image: article.images?.hero || article.hero_image_legacy?.url,
+    datePublished: article.published_at || article.created_at,
+    dateModified: article.updated_at || article.published_at || article.created_at,
+    author: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: siteConfig.name,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${siteConfig.url}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `${siteConfig.url}/${article.slug}`,
+    },
+  };
+}
+
+let companySchema;
+if (type === 'company' && company) {
+  companySchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: company.name,
+    description: company.description,
+    url: company.website_url,
+    logo: company.logo_url,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: company.headquarters,
+    },
+  };
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+{articleSchema && <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />}
+{companySchema && <script type="application/ld+json" set:html={JSON.stringify(companySchema)} />}
