@@ -5,7 +5,7 @@ const { slug } = Astro.params;
 
 // Determine site context based on domain/path
 const isPlacementSite = Astro.url.hostname.includes('placement');
-const isChiefOfStaffSite = Astro.url.hostname.includes('chiefofstaff') || Astro.url.pathname.includes('chiefofstaff');
+const isRelocationSite = Astro.url.hostname.includes('relocation') || Astro.url.pathname.includes('relocation');
 
 // SEO anchor text variations
 const placementAnchorTexts = [
