@@ -2,6 +2,7 @@
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
+import VoiceAssistant from '../components/VoiceAssistant.astro';
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -1058,5 +1059,8 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       }
     });
   </script>
+
+  <!-- Voice Assistant -->
+  <VoiceAssistant />
 </body>
 </html>

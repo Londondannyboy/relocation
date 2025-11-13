@@ -9,6 +9,11 @@ if (!slug) {
   return Astro.redirect('/');
 }
 
+// Skip processing for static files - let them be served from public/
+if (slug.includes('.')) {
+  return new Response(null, { status: 404 });
+}
+
 // Handle sitemap.xml directly
 if (slug === 'sitemap.xml') {
   const siteUrl = (Astro.site?.toString() || 'https://relocation.quest').replace(/\/$/, '');
