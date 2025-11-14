@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwind from '@astrojs/tailwind';
+import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
@@ -10,7 +11,7 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-  integrations: [tailwind()],
+  integrations: [tailwind(), react()],
   server: {
     host: true // Listen on all network interfaces (0.0.0.0)
   },
@@ -20,8 +21,8 @@ export default defineConfig({
       noExternal: []
     },
     optimizeDeps: {
-      // Exclude hume and related packages from client-side bundling
-      exclude: ['hume', '@humeai/voice-react', '@getzep/zep-cloud']
+      // Exclude server-only packages from client-side bundling
+      exclude: ['hume', '@getzep/zep-cloud']
     }
   }
 });
