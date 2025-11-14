@@ -17,12 +17,18 @@ export default defineConfig({
   },
   vite: {
     ssr: {
-      // Exclude Node.js-only packages from being processed for client
-      noExternal: []
+      // Exclude Node.js-only packages from SSR bundling
+      noExternal: [],
+      external: ['hume']
     },
     optimizeDeps: {
       // Exclude server-only packages from client-side bundling
       exclude: ['hume', '@getzep/zep-cloud']
+    },
+    build: {
+      rollupOptions: {
+        external: ['hume', 'stream', 'fs', 'path']
+      }
     }
   }
 });
