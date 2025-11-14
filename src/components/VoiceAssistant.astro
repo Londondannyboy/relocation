@@ -391,9 +391,13 @@ const { apiUrl = 'https://quest-gateway-production.up.railway.app' } = Astro.pro
 
   // Handle incoming messages
   function handleMessage(data) {
+    console.log('Received message:', data); // Debug log
+
     switch (data.type) {
       case 'connected':
-        addMessage(data.message, 'assistant');
+        // Clear initial message and show welcome
+        clearInitialMessage();
+        addMessage(data.message || 'Connected! Ask me anything about relocation.', 'assistant');
         break;
       case 'response':
         addMessage(data.text, 'assistant');
@@ -401,6 +405,16 @@ const { apiUrl = 'https://quest-gateway-production.up.railway.app' } = Astro.pro
       case 'error':
         addMessage(`Error: ${data.message}`, 'assistant', true);
         break;
+      default:
+        console.log('Unknown message type:', data.type);
+    }
+  }
+
+  // Clear the hardcoded initial message
+  function clearInitialMessage() {
+    const initialMsg = conversation.querySelector('.assistant-message:first-child');
+    if (initialMsg && initialMsg.querySelector('p')?.textContent.includes("Hi! I'm your relocation assistant")) {
+      initialMsg.remove();
     }
   }
 
@@ -427,6 +441,8 @@ const { apiUrl = 'https://quest-gateway-production.up.railway.app' } = Astro.pro
 
   // Add message to conversation
   function addMessage(text, sender, isError = false, id = null) {
+    console.log('Adding message:', { text, sender, isError }); // Debug log
+
     // Remove thinking message if exists
     const thinkingMsg = conversation.querySelector('.thinking-msg');
     if (thinkingMsg) {
@@ -440,11 +456,14 @@ const { apiUrl = 'https://quest-gateway-production.up.railway.app' } = Astro.pro
 
     const p = document.createElement('p');
     p.style.margin = '0';
+    p.style.color = sender === 'assistant' ? '#1e40af' : '#ffffff'; // Explicit colors
     p.textContent = text;
 
     msgDiv.appendChild(p);
     conversation.appendChild(msgDiv);
     conversation.scrollTop = conversation.scrollHeight;
+
+    console.log('Message added to conversation'); // Debug log
   }
 
   // Update status indicator
