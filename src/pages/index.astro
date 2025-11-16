@@ -11,28 +11,21 @@ const homepageContent = await sql`
   ORDER BY section_order ASC
 `;
 
-// Fetch companies - filter for relocation services
-const companies = await sql`
+// Fetch articles from Quest DB
+const articles = await sql`
   SELECT
-    name,
+    title,
+    meta_description as excerpt,
     slug,
-    description,
-    headquarters,
-    logo_url,
-    specializations,
-    global_rank
-  FROM companies
-  WHERE status = 'published'
-    AND company_type = 'relocation_services'
-  ORDER BY
-    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
-    global_rank ASC NULLS LAST,
-    name ASC
+    published_at,
+    featured_image_url,
+    featured_image_alt
+  FROM articles
+  WHERE app = 'relocation'
+    AND status = 'published'
+  ORDER BY published_at DESC NULLS LAST
   LIMIT 6
 `;
-
-// Articles disabled temporarily for debugging
-const articles = [];
 
 const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),
@@ -676,7 +669,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 <body>
   <!-- Navigation -->
   <nav>
-    <div class="logo">Relocation</div>
+    <div class="logo">Relocation Quest</div>
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
       <li><a href="/articles">Articles</a></li>
@@ -785,33 +778,26 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     <div class="companies-content">
       <div class="section-header">
-        <h2>Top Relocation Companies</h2>
-        <p>Discover premier relocation services and international moving companies connecting people with their dream destinations worldwide</p>
+        <h2>Latest Guides & Resources</h2>
+        <p>Expert insights and comprehensive guides for international relocation, visa applications, and starting your global journey</p>
       </div>
 
-      {companies.length > 0 ? (
+      {articles.length > 0 ? (
         <div class="companies-grid">
-          {companies.map((company: any) => (
-            <div class="company-card">
+          {articles.map((article: any) => (
+            <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block;">
               <div class="company-header">
                 <div>
-                  <div class="company-name">{company.name}</div>
-                  {company.headquarters && (
-                    <div class="company-location">📍 {company.headquarters}</div>
-                  )}
+                  <div class="company-name">{article.title}</div>
                 </div>
               </div>
-              {company.description && (
-                <p class="company-description">{company.description}</p>
+              {article.excerpt && (
+                <p class="company-description">{article.excerpt}</p>
               )}
-              {company.specializations && company.specializations.length > 0 && (
-                <div class="company-tags">
-                  {company.specializations.slice(0, 3).map((spec: string) => (
-                    <span class="tag">{spec}</span>
-                  ))}
-                </div>
-              )}
-            </div>
+              <div style="margin-top: 20px; color: #667eea; font-weight: 600;">
+                Read more →
+              </div>
+            </a>
           ))}
         </div>
       ) : (
