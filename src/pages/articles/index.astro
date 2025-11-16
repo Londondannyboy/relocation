@@ -6,20 +6,12 @@ const articles = await sql`
   SELECT
     a.id,
     a.title,
-    a.excerpt,
+    a.meta_description as excerpt,
     a.slug,
     a.published_at,
     a.created_at,
-    a.article_angle,
-    a.word_count,
-    a.images,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'featured'
-      LIMIT 1
-    ) as featured_image_legacy
+    a.featured_image_url,
+    a.featured_image_alt
   FROM articles a
   WHERE a.app = 'relocation'
     AND a.status = 'published'
