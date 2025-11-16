@@ -40,54 +40,26 @@ marked.setOptions({
   gfm: true,      // GitHub Flavored Markdown
 });
 
-// Fetch the article with images - supporting both JSONB column and legacy tables
+// Fetch the article with images
 const articleResult = await sql`
   SELECT
     a.id,
     a.title,
     a.content,
-    a.excerpt,
+    a.meta_description as excerpt,
     a.slug,
     a.published_at,
     a.created_at,
-    a.article_angle,
-    a.word_count,
-    a.images,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'hero'
-      LIMIT 1
-    ) as hero_image_legacy,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'content'
-      LIMIT 1
-    ) as content_image_legacy,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'content2'
-      LIMIT 1
-    ) as content2_image_legacy,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'content3'
-      LIMIT 1
-    ) as content3_image_legacy,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'content4'
-      LIMIT 1
-    ) as content4_image_legacy
+    a.hero_image_url,
+    a.hero_image_alt,
+    a.hero_image_title,
+    a.featured_image_url,
+    a.content_image_1_url,
+    a.content_image_1_alt,
+    a.content_image_2_url,
+    a.content_image_2_alt,
+    a.content_image_3_url,
+    a.content_image_3_alt
   FROM articles a
   WHERE a.slug = ${slug}
     AND a.app = 'relocation'
@@ -101,15 +73,7 @@ if (!article) {
 }
 
 // Parse markdown to HTML
-const baseHtml = marked(article.content);
-
-// Intelligently insert images before H2/H3 headings
-const html = insertImagesIntoHTML(baseHtml, article.images, {
-  content_image_legacy: article.content_image_legacy,
-  content2_image_legacy: article.content2_image_legacy,
-  content3_image_legacy: article.content3_image_legacy,
-  content4_image_legacy: article.content4_image_legacy
-});
+const html = marked(article.content);
 ---
 
 <!DOCTYPE html>
@@ -156,7 +120,7 @@ const html = insertImagesIntoHTML(baseHtml, article.images, {
             {article.excerpt}
           </p>
         )}
-        <div class="flex items-center text-sm text-gray-500 space-x-4 mb-8">
+        <div class="flex items-center text-sm text-gray-500 mb-8">
           <time datetime={article.published_at || article.created_at}>
             {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -164,16 +128,15 @@ const html = insertImagesIntoHTML(baseHtml, article.images, {
               day: 'numeric'
             })}
           </time>
-          <span>•</span>
-          <span>{article.word_count} words</span>
         </div>
 
         <!-- Hero Image - Check both new JSONB column and legacy tables -->
-        {(article.images?.hero || article.hero_image_legacy?.url) && (
+        {article.hero_image_url && (
           <div class="mb-8">
             <img
-              src={article.images?.hero || article.hero_image_legacy.url}
-              alt={article.hero_image_legacy?.alt || article.title}
+              src={article.hero_image_url}
+              alt={article.hero_image_alt || article.title}
+              title={article.hero_image_title || article.title}
               class="w-full h-auto rounded-lg shadow-lg"
             />
           </div>

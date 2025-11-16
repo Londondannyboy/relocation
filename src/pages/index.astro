@@ -2,8 +2,6 @@
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
-import VoiceAssistant from '../components/VoiceAssistant.astro';
-import HumeVoiceInterface from '../components/HumeVoiceInterface';
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -258,24 +256,6 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     .btn-secondary:hover {
       background: rgba(255, 255, 255, 0.25);
-    }
-
-    /* Voice Assistant Section */
-    .voice-assistant-section {
-      padding: 120px 60px;
-      background: #f9fafb;
-      position: relative;
-    }
-
-    .voice-container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    @media (max-width: 768px) {
-      .voice-assistant-section {
-        padding: 80px 24px;
-      }
     }
 
     /* Stats Section - Qualitative instead of numbers */
@@ -734,18 +714,11 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </p>
 
       <div class="hero-cta">
-        <a href="/companies" class="btn btn-primary">Find Relocation Services →</a>
         <a href="/articles" class="btn btn-secondary">Read Guides</a>
       </div>
     </div>
   </section>
 
-  <!-- Voice Assistant Section -->
-  <section class="voice-assistant-section">
-    <div class="voice-container">
-      <HumeVoiceInterface client:load />
-    </div>
-  </section>
 
   <!-- Stats - Qualitative Statements -->
   <section class="stats-section">
@@ -927,7 +900,6 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       in your international relocation journey
     </p>
     <div class="hero-cta">
-      <a href="/companies" class="btn btn-primary">Browse Services</a>
       <a href="/articles" class="btn btn-secondary">Read Relocation Guides</a>
     </div>
   </section>
@@ -1085,8 +1057,5 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       }
     });
   </script>
-
-  <!-- Voice Assistant -->
-  <VoiceAssistant />
 </body>
 </html>
