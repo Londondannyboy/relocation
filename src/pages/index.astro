@@ -31,19 +31,8 @@ const companies = await sql`
   LIMIT 6
 `;
 
-// Fetch articles (using meta_description for Quest DB compatibility)
-const articles = await sql`
-  SELECT
-    title,
-    meta_description as excerpt,
-    slug,
-    published_at
-  FROM articles
-  WHERE app = 'relocation'
-    AND status = 'published'
-  ORDER BY published_at DESC NULLS LAST
-  LIMIT 3
-`;
+// Articles disabled temporarily for debugging
+const articles = [];
 
 const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),
