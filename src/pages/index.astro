@@ -31,11 +31,11 @@ const companies = await sql`
   LIMIT 6
 `;
 
-// Fetch articles
+// Fetch articles (using meta_description for Quest DB compatibility)
 const articles = await sql`
   SELECT
     title,
-    excerpt,
+    meta_description as excerpt,
     slug,
     published_at
   FROM articles
