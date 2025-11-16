@@ -32,18 +32,27 @@ const companies = await sql`
 `;
 
 // Fetch articles
-const articles = await sql`
-  SELECT
-    title,
-    excerpt,
-    slug,
-    published_at
-  FROM articles
-  WHERE app = 'relocation'
-    AND status = 'published'
-  ORDER BY published_at DESC NULLS LAST
-  LIMIT 3
-`;
+let articles = [];
+try {
+  const articlesResult = await sql`
+    SELECT
+      title,
+      meta_description as excerpt,
+      slug,
+      published_at,
+      featured_image_url,
+      featured_image_alt
+    FROM articles
+    WHERE app = 'relocation'
+      AND status = 'published'
+    ORDER BY published_at DESC NULLS LAST
+    LIMIT 6
+  `;
+  articles = Array.isArray(articlesResult) ? articlesResult : [];
+} catch (error) {
+  console.error('Error fetching articles:', error);
+  articles = [];
+}
 
 const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),
@@ -687,7 +696,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 <body>
   <!-- Navigation -->
   <nav>
-    <div class="logo">Relocation</div>
+    <div class="logo">Relocation Quest</div>
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
       <li><a href="/articles">Articles</a></li>
@@ -796,39 +805,32 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     <div class="companies-content">
       <div class="section-header">
-        <h2>Top Relocation Companies</h2>
-        <p>Discover premier relocation services and international moving companies connecting people with their dream destinations worldwide</p>
+        <h2>Latest Guides & Resources</h2>
+        <p>Expert insights and comprehensive guides for international relocation, visa applications, and starting your global journey</p>
       </div>
 
-      {companies.length > 0 ? (
+      {articles && articles.length > 0 ? (
         <div class="companies-grid">
-          {companies.map((company: any) => (
-            <div class="company-card">
+          {articles.map((article: any) => (
+            <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block;">
               <div class="company-header">
                 <div>
-                  <div class="company-name">{company.name}</div>
-                  {company.headquarters && (
-                    <div class="company-location">📍 {company.headquarters}</div>
-                  )}
+                  <div class="company-name">{article.title}</div>
                 </div>
               </div>
-              {company.description && (
-                <p class="company-description">{company.description}</p>
+              {article.excerpt && (
+                <p class="company-description">{article.excerpt}</p>
               )}
-              {company.specializations && company.specializations.length > 0 && (
-                <div class="company-tags">
-                  {company.specializations.slice(0, 3).map((spec: string) => (
-                    <span class="tag">{spec}</span>
-                  ))}
-                </div>
-              )}
-            </div>
+              <div style="margin-top: 20px; color: #667eea; font-weight: 600;">
+                Read more →
+              </div>
+            </a>
           ))}
         </div>
       ) : (
         <div class="empty-state">
           <h3>Coming Soon</h3>
-          <p>We're currently curating the finest relocation companies. Check back soon!</p>
+          <p>We're preparing comprehensive relocation guides. Check back soon!</p>
         </div>
       )}
     </div>
