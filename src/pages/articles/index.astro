@@ -58,8 +58,8 @@ const articles = await sql`
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {articles.map((article: any) => (
           <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            {(article.images?.featured || article.featured_image_legacy?.url) && (
-              <img src={article.images?.featured || article.featured_image_legacy.url} alt={article.featured_image_legacy?.alt || article.title} class="w-full h-48 object-cover" />
+            {article.featured_image_url && (
+              <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} class="w-full h-48 object-cover" />
             )}
             <div class="p-6">
               {article.article_angle && (
