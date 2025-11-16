@@ -11,20 +11,38 @@ const homepageContent = await sql`
   ORDER BY section_order ASC
 `;
 
+// Fetch companies - filter for relocation services
+const companies = await sql`
+  SELECT
+    name,
+    slug,
+    description,
+    headquarters,
+    logo_url,
+    specializations,
+    global_rank
+  FROM companies
+  WHERE status = 'published'
+    AND company_type = 'relocation_services'
+  ORDER BY
+    CASE WHEN global_rank IS NOT NULL THEN 0 ELSE 1 END,
+    global_rank ASC NULLS LAST,
+    name ASC
+  LIMIT 6
+`;
+
 // Fetch articles
 const articles = await sql`
   SELECT
     title,
-    meta_description as excerpt,
+    excerpt,
     slug,
-    published_at,
-    featured_image_url,
-    featured_image_alt
+    published_at
   FROM articles
   WHERE app = 'relocation'
     AND status = 'published'
   ORDER BY published_at DESC NULLS LAST
-  LIMIT 6
+  LIMIT 3
 `;
 
 const sections = {
@@ -669,7 +687,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 <body>
   <!-- Navigation -->
   <nav>
-    <div class="logo">Relocation Quest</div>
+    <div class="logo">Relocation</div>
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
       <li><a href="/articles">Articles</a></li>
@@ -769,7 +787,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     </div>
   </section>
 
-  <!-- Latest Articles Section -->
+  <!-- Companies Section -->
   <section class="companies-section">
     <div class="companies-video-bg">
       <video id="companies-video" autoplay loop muted playsinline></video>
@@ -778,32 +796,39 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     <div class="companies-content">
       <div class="section-header">
-        <h2>Latest Guides & Resources</h2>
-        <p>Expert insights and comprehensive guides for international relocation, visa applications, and starting your global journey</p>
+        <h2>Top Relocation Companies</h2>
+        <p>Discover premier relocation services and international moving companies connecting people with their dream destinations worldwide</p>
       </div>
 
-      {articles.length > 0 ? (
+      {companies.length > 0 ? (
         <div class="companies-grid">
-          {articles.map((article: any) => (
-            <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block; cursor: pointer;">
+          {companies.map((company: any) => (
+            <div class="company-card">
               <div class="company-header">
                 <div>
-                  <div class="company-name">{article.title}</div>
+                  <div class="company-name">{company.name}</div>
+                  {company.headquarters && (
+                    <div class="company-location">📍 {company.headquarters}</div>
+                  )}
                 </div>
               </div>
-              {article.excerpt && (
-                <p class="company-description">{article.excerpt}</p>
+              {company.description && (
+                <p class="company-description">{company.description}</p>
               )}
-              <div style="margin-top: 20px; color: #667eea; font-weight: 600;">
-                Read more →
-              </div>
-            </a>
+              {company.specializations && company.specializations.length > 0 && (
+                <div class="company-tags">
+                  {company.specializations.slice(0, 3).map((spec: string) => (
+                    <span class="tag">{spec}</span>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       ) : (
         <div class="empty-state">
           <h3>Coming Soon</h3>
-          <p>We're preparing comprehensive relocation guides. Check back soon!</p>
+          <p>We're currently curating the finest relocation companies. Check back soon!</p>
         </div>
       )}
     </div>
