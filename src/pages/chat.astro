@@ -1,0 +1,152 @@
+---
+import SEO from '../components/SEO.astro';
+import HumeVoiceInterface from '../components/HumeVoiceInterface';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Test - Relocation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f9fafb;
+      color: #111;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 900;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #667eea, #f093fb);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .test-section {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #111;
+    }
+
+    .btn {
+      padding: 20px 48px;
+      border-radius: 100px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: #667eea;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      border: 2px solid #667eea;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 32px;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+      transition: opacity 0.3s;
+    }
+
+    .back-link:hover {
+      opacity: 0.6;
+    }
+
+    nav {
+      padding: 24px 0;
+      margin-bottom: 40px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #111;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <ul class="nav-links">
+        <li><a href="/">← Back to Home</a></li>
+        <li><a href="/articles">Articles</a></li>
+        <li><a href="/companies">Companies</a></li>
+      </ul>
+    </nav>
+
+    <h1>Chat Test Page</h1>
+    <p class="subtitle">Testing the Hume Voice Interface and blue button in isolation</p>
+
+    <!-- Blue Button Test -->
+    <div class="test-section">
+      <h2 class="section-title">Test: Blue Button</h2>
+      <a href="/companies" class="btn btn-primary">Find Relocation Services →</a>
+    </div>
+
+    <!-- Hume Voice Interface Test -->
+    <div class="test-section">
+      <h2 class="section-title">Test: Hume Voice Interface</h2>
+      <HumeVoiceInterface client:load />
+    </div>
+  </div>
+</body>
+</html>
