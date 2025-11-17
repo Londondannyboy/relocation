@@ -153,7 +153,7 @@ const html = marked(article.content);
 
         <!-- Hero Video or Image - Mux video supersedes image when present -->
         {muxHeroPlaybackId ? (
-          <div class="mb-8">
+          <div class="mb-8" style="position: relative;">
             <video
               id="hero-video"
               autoplay
@@ -162,7 +162,8 @@ const html = marked(article.content);
               playsinline
               poster={`https://image.mux.com/${muxHeroPlaybackId}/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop`}
               class="w-full h-auto rounded-lg shadow-lg"
-              style="max-height: 600px; object-fit: cover;"
+              style="max-height: 600px; object-fit: cover; cursor: pointer;"
+              onclick="this.play()"
             ></video>
           </div>
         ) : article.hero_image_url && (

@@ -798,24 +798,31 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
 
       {articles.length > 0 ? (
-        <div class="companies-grid">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto;">
           {articles.map((article: any, index: number) => (
-            <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block;">
+            <a href={`/${article.slug}`} style="text-decoration: none; color: inherit; display: block; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
               {article.mux_playback_id ? (
-                <img src={`https://image.mux.com/${article.mux_playback_id}/animated.gif?width=600`} alt={article.title} style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;" />
+                <img src={`https://image.mux.com/${article.mux_playback_id}/animated.gif?width=600`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
               ) : article.featured_image_url && (
-                <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;" />
+                <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
               )}
-              <div class="company-header">
-                <div>
-                  <div class="company-name">{article.title}</div>
+              <div style="padding: 24px;">
+                <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 12px 0; line-height: 1.3;">
+                  {article.title}
+                </h3>
+                {article.excerpt && (
+                  <p style="color: #666; margin: 0 0 16px 0; line-height: 1.6; font-size: 15px;">
+                    {article.excerpt}
+                  </p>
+                )}
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #999; font-size: 14px;">
+                    {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <span style="color: #667eea; font-weight: 600; font-size: 14px;">
+                    Read more →
+                  </span>
                 </div>
-              </div>
-              {article.excerpt && (
-                <p class="company-description">{article.excerpt}</p>
-              )}
-              <div style="margin-top: 20px; color: #667eea; font-weight: 600;">
-                Read more →
               </div>
             </a>
           ))}
