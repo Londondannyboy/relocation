@@ -100,6 +100,7 @@ const html = marked(article.content);
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{article.title} - Relocation Quest</title>
   <meta name="description" content={article.excerpt || article.title}>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body class="bg-gray-50">
   <!-- Navigation -->
@@ -151,6 +152,7 @@ const html = marked(article.content);
         {muxHeroPlaybackId ? (
           <div class="mb-8">
             <video
+              id="hero-video"
               controls
               autoplay
               muted
@@ -158,11 +160,7 @@ const html = marked(article.content);
               playsinline
               class="w-full h-auto rounded-lg shadow-lg"
               style="max-height: 600px; object-fit: cover;"
-            >
-              <source src={`https://stream.mux.com/${muxHeroPlaybackId}.m3u8`} type="application/x-mpegURL" />
-              <source src={`https://stream.mux.com/${muxHeroPlaybackId}/high.mp4`} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            ></video>
           </div>
         ) : article.hero_image_url && (
           <div class="mb-8">
@@ -210,5 +208,21 @@ const html = marked(article.content);
       <p class="text-gray-400">© {new Date().getFullYear()} Relocation Quest. All rights reserved.</p>
     </div>
   </footer>
+
+  {muxHeroPlaybackId && (
+    <script is:inline define:vars={{ playbackId: muxHeroPlaybackId }}>
+      const video = document.querySelector('video');
+      if (video && playbackId) {
+        const videoSrc = `https://stream.mux.com/${playbackId}.m3u8`;
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(videoSrc);
+          hls.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = videoSrc;
+        }
+      }
+    </script>
+  )}
 </body>
 </html>
