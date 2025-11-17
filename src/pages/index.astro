@@ -29,12 +29,19 @@ const articles = await sql`
 `;
 
 // Extract Mux playback IDs from video URLs
-articles.forEach((article: any) => {
+console.log('Processing', articles.length, 'articles');
+articles.forEach((article: any, index: number) => {
+  console.log(`Article ${index}:`, article.title, 'hero_video_url:', article.hero_video_url);
   if (article.hero_video_url) {
     const match = article.hero_video_url.match(/stream\.mux\.com\/([^\/\.\?]+)/);
     if (match) {
       article.mux_playback_id = match[1];
+      console.log(`✅ Extracted playback ID for article ${index}:`, article.mux_playback_id);
+    } else {
+      console.log(`❌ Could not extract playback ID for article ${index}`);
     }
+  } else {
+    console.log(`❌ No hero_video_url for article ${index}`);
   }
 });
 
