@@ -19,7 +19,8 @@ const articles = await sql`
     slug,
     published_at,
     featured_image_url,
-    featured_image_alt
+    featured_image_alt,
+    mux_featured_playback_id
   FROM articles
   WHERE app = 'relocation'
     AND status = 'published'
@@ -783,7 +784,18 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
         <div class="companies-grid">
           {articles.map((article: any) => (
             <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block;">
-              {article.featured_image_url && (
+              {article.mux_featured_playback_id ? (
+                <video
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;"
+                >
+                  <source src={`https://stream.mux.com/${article.mux_featured_playback_id}.m3u8`} type="application/x-mpegURL" />
+                  <source src={`https://stream.mux.com/${article.mux_featured_playback_id}/high.mp4`} type="video/mp4" />
+                </video>
+              ) : article.featured_image_url && (
                 <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;" />
               )}
               <div class="company-header">

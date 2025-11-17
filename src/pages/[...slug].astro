@@ -40,7 +40,7 @@ marked.setOptions({
   gfm: true,      // GitHub Flavored Markdown
 });
 
-// Fetch the article with images
+// Fetch the article with images and Mux videos
 const articleResult = await sql`
   SELECT
     a.id,
@@ -54,6 +54,8 @@ const articleResult = await sql`
     a.hero_image_alt,
     a.hero_image_title,
     a.featured_image_url,
+    a.mux_hero_playback_id,
+    a.mux_featured_playback_id,
     a.content_image_1_url,
     a.content_image_1_alt,
     a.content_image_2_url,
@@ -130,8 +132,24 @@ const html = marked(article.content);
           </time>
         </div>
 
-        <!-- Hero Image - Check both new JSONB column and legacy tables -->
-        {article.hero_image_url && (
+        <!-- Hero Video or Image - Mux video supersedes image when present -->
+        {article.mux_hero_playback_id ? (
+          <div class="mb-8">
+            <video
+              controls
+              autoplay
+              muted
+              loop
+              playsinline
+              class="w-full h-auto rounded-lg shadow-lg"
+              style="max-height: 600px; object-fit: cover;"
+            >
+              <source src={`https://stream.mux.com/${article.mux_hero_playback_id}.m3u8`} type="application/x-mpegURL" />
+              <source src={`https://stream.mux.com/${article.mux_hero_playback_id}/high.mp4`} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        ) : article.hero_image_url && (
           <div class="mb-8">
             <img
               src={article.hero_image_url}

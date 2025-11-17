@@ -1,7 +1,7 @@
 ---
 import { sql } from '../../lib/db';
 
-// Fetch all published articles with featured images
+// Fetch all published articles with featured images and Mux videos
 const articles = await sql`
   SELECT
     a.id,
@@ -11,7 +11,8 @@ const articles = await sql`
     a.published_at,
     a.created_at,
     a.featured_image_url,
-    a.featured_image_alt
+    a.featured_image_alt,
+    a.mux_featured_playback_id
   FROM articles a
   WHERE a.app = 'relocation'
     AND a.status = 'published'
@@ -58,7 +59,18 @@ const articles = await sql`
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {articles.map((article: any) => (
           <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            {article.featured_image_url && (
+            {article.mux_featured_playback_id ? (
+              <video
+                autoplay
+                muted
+                loop
+                playsinline
+                class="w-full h-48 object-cover"
+              >
+                <source src={`https://stream.mux.com/${article.mux_featured_playback_id}.m3u8`} type="application/x-mpegURL" />
+                <source src={`https://stream.mux.com/${article.mux_featured_playback_id}/high.mp4`} type="video/mp4" />
+              </video>
+            ) : article.featured_image_url && (
               <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} class="w-full h-48 object-cover" />
             )}
             <div class="p-6">
