@@ -41,63 +41,43 @@ marked.setOptions({
 });
 
 // Fetch the article with images and Mux videos
-let articleResult;
-try {
-  articleResult = await sql`
-    SELECT
-      a.id,
-      a.title,
-      a.content,
-      a.meta_description as excerpt,
-      a.slug,
-      a.published_at,
-      a.created_at,
-      a.hero_image_url,
-      a.hero_image_alt,
-      a.hero_image_title,
-      a.featured_image_url,
-      a.mux_hero_playback_id,
-      a.mux_featured_playback_id,
-      a.content_image_1_url,
-      a.content_image_1_alt,
-      a.content_image_2_url,
-      a.content_image_2_alt,
-      a.content_image_3_url,
-      a.content_image_3_alt
-    FROM articles a
-    WHERE a.slug = ${slug}
-      AND a.app = 'relocation'
-    LIMIT 1
-  `;
-} catch (error) {
-  // Fallback if mux columns don't exist yet
-  articleResult = await sql`
-    SELECT
-      a.id,
-      a.title,
-      a.content,
-      a.meta_description as excerpt,
-      a.slug,
-      a.published_at,
-      a.created_at,
-      a.hero_image_url,
-      a.hero_image_alt,
-      a.hero_image_title,
-      a.featured_image_url,
-      a.content_image_1_url,
-      a.content_image_1_alt,
-      a.content_image_2_url,
-      a.content_image_2_alt,
-      a.content_image_3_url,
-      a.content_image_3_alt
-    FROM articles a
-    WHERE a.slug = ${slug}
-      AND a.app = 'relocation'
-    LIMIT 1
-  `;
-}
+const articleResult = await sql`
+  SELECT
+    a.id,
+    a.title,
+    a.content,
+    a.meta_description as excerpt,
+    a.slug,
+    a.published_at,
+    a.created_at,
+    a.hero_image_url,
+    a.hero_image_alt,
+    a.hero_image_title,
+    a.hero_video_url,
+    a.featured_image_url,
+    a.content_image_1_url,
+    a.content_image_1_alt,
+    a.content_image_2_url,
+    a.content_image_2_alt,
+    a.content_image_3_url,
+    a.content_image_3_alt
+  FROM articles a
+  WHERE a.slug = ${slug}
+    AND a.app = 'relocation'
+  LIMIT 1
+`;
 
 const article = articleResult[0];
+
+// Extract Mux playback ID from hero_video_url if present
+// URL format: https://stream.mux.com/{PLAYBACK_ID}.m3u8
+let muxHeroPlaybackId = null;
+if (article?.hero_video_url) {
+  const match = article.hero_video_url.match(/\/([^\/]+)\.(m3u8|mp4)$/);
+  if (match) {
+    muxHeroPlaybackId = match[1];
+  }
+}
 
 if (!article) {
   return Astro.redirect('/');
@@ -162,7 +142,7 @@ const html = marked(article.content);
         </div>
 
         <!-- Hero Video or Image - Mux video supersedes image when present -->
-        {article.mux_hero_playback_id ? (
+        {muxHeroPlaybackId ? (
           <div class="mb-8">
             <video
               controls
@@ -173,8 +153,8 @@ const html = marked(article.content);
               class="w-full h-auto rounded-lg shadow-lg"
               style="max-height: 600px; object-fit: cover;"
             >
-              <source src={`https://stream.mux.com/${article.mux_hero_playback_id}.m3u8`} type="application/x-mpegURL" />
-              <source src={`https://stream.mux.com/${article.mux_hero_playback_id}/high.mp4`} type="video/mp4" />
+              <source src={`https://stream.mux.com/${muxHeroPlaybackId}.m3u8`} type="application/x-mpegURL" />
+              <source src={`https://stream.mux.com/${muxHeroPlaybackId}/high.mp4`} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>

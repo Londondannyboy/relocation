@@ -1,43 +1,22 @@
 ---
 import { sql } from '../../lib/db';
 
-// Fetch all published articles with featured images and Mux videos
-let articles;
-try {
-  articles = await sql`
-    SELECT
-      a.id,
-      a.title,
-      a.meta_description as excerpt,
-      a.slug,
-      a.published_at,
-      a.created_at,
-      a.featured_image_url,
-      a.featured_image_alt,
-      a.mux_featured_playback_id
-    FROM articles a
-    WHERE a.app = 'relocation'
-      AND a.status = 'published'
-    ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
-  `;
-} catch (error) {
-  // Fallback if mux column doesn't exist yet
-  articles = await sql`
-    SELECT
-      a.id,
-      a.title,
-      a.meta_description as excerpt,
-      a.slug,
-      a.published_at,
-      a.created_at,
-      a.featured_image_url,
-      a.featured_image_alt
-    FROM articles a
-    WHERE a.app = 'relocation'
-      AND a.status = 'published'
-    ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
-  `;
-}
+// Fetch all published articles with featured images
+const articles = await sql`
+  SELECT
+    a.id,
+    a.title,
+    a.meta_description as excerpt,
+    a.slug,
+    a.published_at,
+    a.created_at,
+    a.featured_image_url,
+    a.featured_image_alt
+  FROM articles a
+  WHERE a.app = 'relocation'
+    AND a.status = 'published'
+  ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+`;
 ---
 
 <!DOCTYPE html>
@@ -79,18 +58,7 @@ try {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {articles.map((article: any) => (
           <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            {article.mux_featured_playback_id ? (
-              <video
-                autoplay
-                muted
-                loop
-                playsinline
-                class="w-full h-48 object-cover"
-              >
-                <source src={`https://stream.mux.com/${article.mux_featured_playback_id}.m3u8`} type="application/x-mpegURL" />
-                <source src={`https://stream.mux.com/${article.mux_featured_playback_id}/high.mp4`} type="video/mp4" />
-              </video>
-            ) : article.featured_image_url && (
+            {article.featured_image_url && (
               <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} class="w-full h-48 object-cover" />
             )}
             <div class="p-6">

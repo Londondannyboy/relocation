@@ -12,40 +12,20 @@ const homepageContent = await sql`
 `;
 
 // Fetch articles from Quest DB
-let articles;
-try {
-  articles = await sql`
-    SELECT
-      title,
-      meta_description as excerpt,
-      slug,
-      published_at,
-      featured_image_url,
-      featured_image_alt,
-      mux_featured_playback_id
-    FROM articles
-    WHERE app = 'relocation'
-      AND status = 'published'
-    ORDER BY published_at DESC NULLS LAST
-    LIMIT 6
-  `;
-} catch (error) {
-  // Fallback if mux column doesn't exist yet
-  articles = await sql`
-    SELECT
-      title,
-      meta_description as excerpt,
-      slug,
-      published_at,
-      featured_image_url,
-      featured_image_alt
-    FROM articles
-    WHERE app = 'relocation'
-      AND status = 'published'
-    ORDER BY published_at DESC NULLS LAST
-    LIMIT 6
-  `;
-}
+const articles = await sql`
+  SELECT
+    title,
+    meta_description as excerpt,
+    slug,
+    published_at,
+    featured_image_url,
+    featured_image_alt
+  FROM articles
+  WHERE app = 'relocation'
+    AND status = 'published'
+  ORDER BY published_at DESC NULLS LAST
+  LIMIT 6
+`;
 
 const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),
@@ -803,18 +783,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
         <div class="companies-grid">
           {articles.map((article: any) => (
             <a href={`/${article.slug}`} class="company-card" style="text-decoration: none; color: inherit; display: block;">
-              {article.mux_featured_playback_id ? (
-                <video
-                  autoplay
-                  muted
-                  loop
-                  playsinline
-                  style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;"
-                >
-                  <source src={`https://stream.mux.com/${article.mux_featured_playback_id}.m3u8`} type="application/x-mpegURL" />
-                  <source src={`https://stream.mux.com/${article.mux_featured_playback_id}/high.mp4`} type="video/mp4" />
-                </video>
-              ) : article.featured_image_url && (
+              {article.featured_image_url && (
                 <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; margin-bottom: 20px;" />
               )}
               <div class="company-header">
