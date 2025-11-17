@@ -2,22 +2,42 @@
 import { sql } from '../../lib/db';
 
 // Fetch all published articles with featured images and Mux videos
-const articles = await sql`
-  SELECT
-    a.id,
-    a.title,
-    a.meta_description as excerpt,
-    a.slug,
-    a.published_at,
-    a.created_at,
-    a.featured_image_url,
-    a.featured_image_alt,
-    a.mux_featured_playback_id
-  FROM articles a
-  WHERE a.app = 'relocation'
-    AND a.status = 'published'
-  ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
-`;
+let articles;
+try {
+  articles = await sql`
+    SELECT
+      a.id,
+      a.title,
+      a.meta_description as excerpt,
+      a.slug,
+      a.published_at,
+      a.created_at,
+      a.featured_image_url,
+      a.featured_image_alt,
+      a.mux_featured_playback_id
+    FROM articles a
+    WHERE a.app = 'relocation'
+      AND a.status = 'published'
+    ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+  `;
+} catch (error) {
+  // Fallback if mux column doesn't exist yet
+  articles = await sql`
+    SELECT
+      a.id,
+      a.title,
+      a.meta_description as excerpt,
+      a.slug,
+      a.published_at,
+      a.created_at,
+      a.featured_image_url,
+      a.featured_image_alt
+    FROM articles a
+    WHERE a.app = 'relocation'
+      AND a.status = 'published'
+    ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+  `;
+}
 ---
 
 <!DOCTYPE html>

@@ -12,21 +12,40 @@ const homepageContent = await sql`
 `;
 
 // Fetch articles from Quest DB
-const articles = await sql`
-  SELECT
-    title,
-    meta_description as excerpt,
-    slug,
-    published_at,
-    featured_image_url,
-    featured_image_alt,
-    mux_featured_playback_id
-  FROM articles
-  WHERE app = 'relocation'
-    AND status = 'published'
-  ORDER BY published_at DESC NULLS LAST
-  LIMIT 6
-`;
+let articles;
+try {
+  articles = await sql`
+    SELECT
+      title,
+      meta_description as excerpt,
+      slug,
+      published_at,
+      featured_image_url,
+      featured_image_alt,
+      mux_featured_playback_id
+    FROM articles
+    WHERE app = 'relocation'
+      AND status = 'published'
+    ORDER BY published_at DESC NULLS LAST
+    LIMIT 6
+  `;
+} catch (error) {
+  // Fallback if mux column doesn't exist yet
+  articles = await sql`
+    SELECT
+      title,
+      meta_description as excerpt,
+      slug,
+      published_at,
+      featured_image_url,
+      featured_image_alt
+    FROM articles
+    WHERE app = 'relocation'
+      AND status = 'published'
+    ORDER BY published_at DESC NULLS LAST
+    LIMIT 6
+  `;
+}
 
 const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),

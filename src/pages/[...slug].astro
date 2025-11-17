@@ -41,32 +41,61 @@ marked.setOptions({
 });
 
 // Fetch the article with images and Mux videos
-const articleResult = await sql`
-  SELECT
-    a.id,
-    a.title,
-    a.content,
-    a.meta_description as excerpt,
-    a.slug,
-    a.published_at,
-    a.created_at,
-    a.hero_image_url,
-    a.hero_image_alt,
-    a.hero_image_title,
-    a.featured_image_url,
-    a.mux_hero_playback_id,
-    a.mux_featured_playback_id,
-    a.content_image_1_url,
-    a.content_image_1_alt,
-    a.content_image_2_url,
-    a.content_image_2_alt,
-    a.content_image_3_url,
-    a.content_image_3_alt
-  FROM articles a
-  WHERE a.slug = ${slug}
-    AND a.app = 'relocation'
-  LIMIT 1
-`;
+let articleResult;
+try {
+  articleResult = await sql`
+    SELECT
+      a.id,
+      a.title,
+      a.content,
+      a.meta_description as excerpt,
+      a.slug,
+      a.published_at,
+      a.created_at,
+      a.hero_image_url,
+      a.hero_image_alt,
+      a.hero_image_title,
+      a.featured_image_url,
+      a.mux_hero_playback_id,
+      a.mux_featured_playback_id,
+      a.content_image_1_url,
+      a.content_image_1_alt,
+      a.content_image_2_url,
+      a.content_image_2_alt,
+      a.content_image_3_url,
+      a.content_image_3_alt
+    FROM articles a
+    WHERE a.slug = ${slug}
+      AND a.app = 'relocation'
+    LIMIT 1
+  `;
+} catch (error) {
+  // Fallback if mux columns don't exist yet
+  articleResult = await sql`
+    SELECT
+      a.id,
+      a.title,
+      a.content,
+      a.meta_description as excerpt,
+      a.slug,
+      a.published_at,
+      a.created_at,
+      a.hero_image_url,
+      a.hero_image_alt,
+      a.hero_image_title,
+      a.featured_image_url,
+      a.content_image_1_url,
+      a.content_image_1_alt,
+      a.content_image_2_url,
+      a.content_image_2_alt,
+      a.content_image_3_url,
+      a.content_image_3_alt
+    FROM articles a
+    WHERE a.slug = ${slug}
+      AND a.app = 'relocation'
+    LIMIT 1
+  `;
+}
 
 const article = articleResult[0];
 
