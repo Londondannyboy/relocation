@@ -158,6 +158,7 @@ const html = marked(article.content);
               muted
               loop
               playsinline
+              poster={`https://image.mux.com/${muxHeroPlaybackId}/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop`}
               class="w-full h-auto rounded-lg shadow-lg"
               style="max-height: 600px; object-fit: cover;"
             ></video>
@@ -211,15 +212,29 @@ const html = marked(article.content);
 
   {muxHeroPlaybackId && (
     <script is:inline define:vars={{ playbackId: muxHeroPlaybackId }}>
-      const video = document.querySelector('video');
+      const video = document.querySelector('#hero-video');
       if (video && playbackId) {
         const videoSrc = `https://stream.mux.com/${playbackId}.m3u8`;
+
         if (Hls.isSupported()) {
           const hls = new Hls();
           hls.loadSource(videoSrc);
           hls.attachMedia(video);
+
+          hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            console.log('Mux video loaded successfully');
+            video.play().catch(e => console.log('Autoplay prevented:', e));
+          });
+
+          hls.on(Hls.Events.ERROR, function(event, data) {
+            console.error('HLS error:', data);
+          });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
           video.src = videoSrc;
+          video.addEventListener('loadedmetadata', function() {
+            console.log('Mux video loaded (Safari)');
+            video.play().catch(e => console.log('Autoplay prevented:', e));
+          });
         }
       }
     </script>
