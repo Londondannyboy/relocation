@@ -10,8 +10,8 @@ export const POST: APIRoute = async ({ request }) => {
       headers: {
         'Content-Type': 'application/json',
         'x-stack-access-type': 'client',
-        'x-stack-project-id': '5ef873fa-5690-460a-bc2c-b29802508691',
-        'x-stack-publishable-client-key': 'pck_ga54pv0h057get6j0ej1sxeacgd0kszgs800xnydnd0v0',
+        'x-stack-project-id': import.meta.env.PUBLIC_STACK_PROJECT_ID,
+        'x-stack-publishable-client-key': import.meta.env.PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,
       },
       body: JSON.stringify({
         email,
