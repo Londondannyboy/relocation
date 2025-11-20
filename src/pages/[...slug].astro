@@ -9,31 +9,6 @@ if (!slug) {
   return Astro.redirect('/');
 }
 
-// Skip processing for static files - let them be served from public/
-if (slug.includes('.')) {
-  return new Response(null, { status: 404 });
-}
-
-// Handle sitemap.xml directly
-if (slug === 'sitemap.xml') {
-  const siteUrl = (Astro.site?.toString() || 'https://relocation.quest').replace(/\/$/, '');
-
-  const articles = await sql`SELECT slug, published_at, updated_at, created_at FROM articles WHERE app = 'relocation' AND status = 'published'`;
-  const companies = await sql`SELECT slug, updated_at, created_at FROM companies WHERE app = 'relocation' AND status = 'published'`;
-  const now = new Date().toISOString();
-
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>${siteUrl}/</loc><lastmod>${now}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
-  <url><loc>${siteUrl}/articles</loc><lastmod>${now}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>${siteUrl}/companies</loc><lastmod>${now}</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>${articles.map((a: any) => `
-  <url><loc>${siteUrl}/${a.slug}</loc><lastmod>${new Date(a.updated_at || a.published_at || a.created_at).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`).join('')}${companies.map((c: any) => `
-  <url><loc>${siteUrl}/companies/${c.slug}</loc><lastmod>${new Date(c.updated_at || c.created_at).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`).join('')}
-</urlset>`;
-
-  return new Response(sitemap, { status: 200, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } });
-}
-
 // Configure marked for better formatting
 marked.setOptions({
   breaks: false,  // Don't convert single \n to <br> (proper paragraph spacing)
