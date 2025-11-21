@@ -12,6 +12,9 @@ export default defineConfig({
     mode: 'standalone'
   }),
   integrations: [tailwind(), react()],
+  redirects: {
+    '/relocation/guide/latvia-startup-visa-complete-guide-2025': '/latvia-startup-visa-complete-guide-2025'
+  },
   server: {
     host: true // Listen on all network interfaces (0.0.0.0)
   },
