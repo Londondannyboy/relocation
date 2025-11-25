@@ -1,6 +1,5 @@
 ---
 import { sql } from '../../lib/db';
-import { marked } from 'marked';
 
 const { slug } = Astro.params;
 
@@ -8,13 +7,7 @@ if (!slug) {
   return Astro.redirect('/');
 }
 
-// Configure marked for better formatting
-marked.setOptions({
-  breaks: false,  // Don't convert single \n to <br> (proper paragraph spacing)
-  gfm: true,      // GitHub Flavored Markdown
-});
-
-// Fetch the article with images
+// Fetch the article with video support
 const articleResult = await sql`
   SELECT
     a.id,
@@ -26,6 +19,10 @@ const articleResult = await sql`
     a.created_at,
     a.article_angle,
     a.word_count,
+    a.video_url,
+    a.video_playback_id,
+    a.featured_asset_url,
+    a.hero_asset_url,
     (
       SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
       FROM article_image_usage aiu
@@ -35,7 +32,7 @@ const articleResult = await sql`
     ) as hero_image
   FROM articles a
   WHERE a.slug = ${slug}
-    AND a.app = 'placement'
+    AND a.app = 'relocation'
   LIMIT 1
 `;
 
@@ -45,8 +42,8 @@ if (!article) {
   return Astro.redirect('/');
 }
 
-// Parse markdown to HTML
-const html = marked(article.content);
+// Content is already HTML with Tailwind classes - no parsing needed
+const html = article.content;
 ---
 
 <!DOCTYPE html>
@@ -54,8 +51,12 @@ const html = marked(article.content);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{article.title} - Placement</title>
+  <title>{article.title} - Relocation Quest</title>
   <meta name="description" content={article.excerpt || article.title}>
+  <script src="https://cdn.tailwindcss.com"></script>
+  {article.video_playback_id && (
+    <script src="https://cdn.jsdelivr.net/npm/@mux/mux-player"></script>
+  )}
 </head>
 <body class="bg-gray-50">
   <!-- Navigation -->
@@ -64,7 +65,7 @@ const html = marked(article.content);
       <div class="flex justify-between h-16">
         <div class="flex items-center">
           <h1 class="text-2xl font-bold text-blue-600">
-            <a href="/">Placement</a>
+            <a href="/">Relocation Quest</a>
           </h1>
         </div>
         <div class="flex items-center space-x-8">
@@ -105,8 +106,33 @@ const html = marked(article.content);
           <span>{article.word_count} words</span>
         </div>
 
-        <!-- Hero Image -->
-        {article.hero_image?.url && (
+        <!-- Hero Video or Image -->
+        {article.video_playback_id ? (
+          <div class="mb-8 rounded-lg overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={article.video_playback_id}
+              metadata-video-title={article.title}
+              accent-color="#2563eb"
+              style="aspect-ratio: 16/9; width: 100%;"
+            />
+          </div>
+        ) : article.hero_asset_url ? (
+          <div class="mb-8">
+            <img
+              src={article.hero_asset_url}
+              alt={article.title}
+              class="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        ) : article.featured_asset_url ? (
+          <div class="mb-8">
+            <img
+              src={article.featured_asset_url}
+              alt={article.title}
+              class="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        ) : article.hero_image?.url && (
           <div class="mb-8">
             <img
               src={article.hero_image.url}
@@ -117,23 +143,9 @@ const html = marked(article.content);
         )}
       </header>
 
-      <!-- Article Body -->
+      <!-- Article Body - content already has Tailwind classes -->
       <div class="bg-white rounded-lg shadow-sm p-8 md:p-12">
-        <div
-          set:html={html}
-          class="prose prose-lg prose-blue max-w-none
-                 prose-headings:font-bold prose-headings:text-gray-900
-                 prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
-                 prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
-                 prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-8
-                 prose-a:text-blue-600 prose-a:font-bold prose-a:underline hover:prose-a:text-blue-800
-                 prose-strong:text-gray-900 prose-strong:font-semibold
-                 prose-ul:my-8 prose-ul:list-disc prose-ul:pl-6
-                 prose-ol:my-8 prose-ol:list-decimal prose-ol:pl-6
-                 prose-li:mb-3 prose-li:text-gray-700
-                 prose-blockquote:border-l-4 prose-blockquote:border-blue-600 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:my-8
-                 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm"
-        />
+        <div set:html={html} class="max-w-none" />
       </div>
 
       <!-- Back Link -->
@@ -148,7 +160,7 @@ const html = marked(article.content);
   <!-- Footer -->
   <footer class="bg-gray-900 text-white py-12 mt-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-gray-400">© {new Date().getFullYear()} Placement. All rights reserved.</p>
+      <p class="text-gray-400">© {new Date().getFullYear()} Relocation Quest. All rights reserved.</p>
     </div>
   </footer>
 </body>
