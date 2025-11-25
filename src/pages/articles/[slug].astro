@@ -37,6 +37,26 @@ if (!article) {
 
 // Content is already HTML with Tailwind classes - no parsing needed
 const html = article.content;
+
+// Clean up excerpt - truncate at sentence boundary if needed
+let excerpt = article.excerpt || '';
+if (excerpt.length > 0) {
+  // If excerpt is truncated mid-word, try to find last complete sentence
+  if (!excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.endsWith('?')) {
+    const lastPeriod = excerpt.lastIndexOf('.');
+    const lastQuestion = excerpt.lastIndexOf('?');
+    const lastExclaim = excerpt.lastIndexOf('!');
+    const lastSentenceEnd = Math.max(lastPeriod, lastQuestion, lastExclaim);
+
+    if (lastSentenceEnd > excerpt.length * 0.5) {
+      // Only truncate if we keep at least 50% of content
+      excerpt = excerpt.substring(0, lastSentenceEnd + 1);
+    } else {
+      // Otherwise just add ellipsis
+      excerpt = excerpt.trim() + '...';
+    }
+  }
+}
 ---
 
 <!DOCTYPE html>
@@ -82,9 +102,9 @@ const html = article.content;
         <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
           {article.title}
         </h1>
-        {article.excerpt && (
+        {excerpt && (
           <p class="text-xl text-gray-600 mb-6 leading-relaxed">
-            {article.excerpt}
+            {excerpt}
           </p>
         )}
         <div class="flex items-center text-sm text-gray-500 space-x-4 mb-8">
@@ -106,9 +126,10 @@ const html = article.content;
               playback-id={article.video_playback_id}
               metadata-video-title={article.title}
               accent-color="#2563eb"
-              autoplay
+              autoplay="muted"
               muted
               loop
+              playsinline
               preload="auto"
               style="aspect-ratio: 16/9; width: 100%;"
             />
