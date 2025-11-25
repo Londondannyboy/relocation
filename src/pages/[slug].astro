@@ -122,8 +122,51 @@ const html = article.content;
 
       <!-- Article Body - content already has Tailwind classes -->
       <div class="bg-white rounded-lg shadow-sm p-8 md:p-12">
-        <div set:html={html} class="max-w-none" />
+        <div set:html={html} class="article-content max-w-none" />
       </div>
+
+      <style>
+        /* Ensure article content styling works with Tailwind CDN */
+        .article-content a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+        .article-content a:hover {
+          color: #1d4ed8;
+        }
+        .article-content h2 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #111827;
+          margin-top: 2rem;
+          margin-bottom: 1rem;
+        }
+        .article-content p {
+          color: #374151;
+          line-height: 1.75;
+          margin-bottom: 1rem;
+        }
+        .article-content ul, .article-content ol {
+          margin-bottom: 1.5rem;
+          padding-left: 1.5rem;
+        }
+        .article-content li {
+          margin-bottom: 0.5rem;
+          color: #374151;
+        }
+        .article-content blockquote {
+          border-left: 4px solid #3b82f6;
+          padding-left: 1rem;
+          margin: 1.5rem 0;
+          font-style: italic;
+          color: #4b5563;
+        }
+        .article-content mux-player {
+          width: 100%;
+          border-radius: 0.5rem;
+          overflow: hidden;
+        }
+      </style>
 
       <!-- Back Link -->
       <div class="mt-12">
