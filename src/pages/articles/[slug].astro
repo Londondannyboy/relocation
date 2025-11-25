@@ -13,7 +13,7 @@ const articleResult = await sql`
     a.id,
     a.title,
     a.content,
-    a.excerpt,
+    a.meta_description as excerpt,
     a.slug,
     a.published_at,
     a.created_at,
@@ -22,14 +22,7 @@ const articleResult = await sql`
     a.video_url,
     a.video_playback_id,
     a.featured_asset_url,
-    a.hero_asset_url,
-    (
-      SELECT json_build_object('url', i.cloudinary_url, 'alt', aiu.alt_text)
-      FROM article_image_usage aiu
-      JOIN images i ON i.id = aiu.image_id
-      WHERE aiu.article_id = a.id AND aiu.role = 'hero'
-      LIMIT 1
-    ) as hero_image
+    a.hero_asset_url
   FROM articles a
   WHERE a.slug = ${slug}
     AND a.app = 'relocation'
@@ -124,19 +117,11 @@ const html = article.content;
               class="w-full h-auto rounded-lg shadow-lg"
             />
           </div>
-        ) : article.featured_asset_url ? (
+        ) : article.featured_asset_url && (
           <div class="mb-8">
             <img
               src={article.featured_asset_url}
               alt={article.title}
-              class="w-full h-auto rounded-lg shadow-lg"
-            />
-          </div>
-        ) : article.hero_image?.url && (
-          <div class="mb-8">
-            <img
-              src={article.hero_image.url}
-              alt={article.hero_image.alt || article.title}
               class="w-full h-auto rounded-lg shadow-lg"
             />
           </div>
