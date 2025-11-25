@@ -18,9 +18,10 @@ const articles = await sql`
     meta_description as excerpt,
     slug,
     published_at,
-    featured_image_url,
-    featured_image_alt,
-    hero_video_url
+    featured_asset_url,
+    featured_asset_alt,
+    video_url,
+    video_playback_id
   FROM articles
   WHERE app = 'relocation'
     AND status = 'published'
@@ -28,21 +29,9 @@ const articles = await sql`
   LIMIT 6
 `;
 
-// Extract Mux playback IDs from video URLs
-console.log('Processing', articles.length, 'articles');
-articles.forEach((article: any, index: number) => {
-  console.log(`Article ${index}:`, article.title, 'hero_video_url:', article.hero_video_url);
-  if (article.hero_video_url) {
-    const match = article.hero_video_url.match(/stream\.mux\.com\/([^\/\.\?]+)/);
-    if (match) {
-      article.mux_playback_id = match[1];
-      console.log(`✅ Extracted playback ID for article ${index}:`, article.mux_playback_id);
-    } else {
-      console.log(`❌ Could not extract playback ID for article ${index}`);
-    }
-  } else {
-    console.log(`❌ No hero_video_url for article ${index}`);
-  }
+// Video playback IDs are now stored directly in the database (video-first architecture)
+articles.forEach((article: any) => {
+  article.mux_playback_id = article.video_playback_id || null;
 });
 
 const sections = {
@@ -803,8 +792,8 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
             <a href={`/${article.slug}`} style="text-decoration: none; color: inherit; display: block; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
               {article.mux_playback_id ? (
                 <img src={`https://image.mux.com/${article.mux_playback_id}/animated.gif?width=600`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
-              ) : article.featured_image_url && (
-                <img src={article.featured_image_url} alt={article.featured_image_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
+              ) : article.featured_asset_url && (
+                <img src={article.featured_asset_url} alt={article.featured_asset_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
               )}
               <div style="padding: 24px;">
                 <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 12px 0; line-height: 1.3;">

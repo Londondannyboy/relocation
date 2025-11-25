@@ -58,7 +58,7 @@ if (type === 'article' && article) {
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt || article.title,
-    image: article.images?.hero || article.hero_image_legacy?.url,
+    image: article.images?.hero || article.hero_asset_url || (article.video_playback_id ? `https://image.mux.com/${article.video_playback_id}/thumbnail.jpg` : null),
     datePublished: article.published_at || article.created_at,
     dateModified: article.updated_at || article.published_at || article.created_at,
     author: {
