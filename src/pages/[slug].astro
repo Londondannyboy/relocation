@@ -7,7 +7,7 @@ if (!slug) {
   return Astro.redirect('/');
 }
 
-// Fetch the article with images and Mux videos
+// Fetch the article with 4-act structured data
 const articleResult = await sql`
   SELECT
     a.id,
@@ -17,12 +17,14 @@ const articleResult = await sql`
     a.slug,
     a.published_at,
     a.created_at,
-    a.hero_asset_url,
-    a.hero_asset_alt,
-    a.hero_asset_title,
+    a.article_angle,
+    a.word_count,
     a.video_url,
     a.video_playback_id,
-    a.featured_asset_url
+    a.featured_asset_url,
+    a.hero_asset_url,
+    a.video_narrative,
+    a.payload
   FROM articles a
   WHERE a.slug = ${slug}
     AND a.app = 'relocation'
@@ -35,11 +37,88 @@ if (!article) {
   return Astro.redirect('/');
 }
 
-// Use video_playback_id directly (video-first architecture)
-const muxHeroPlaybackId = article.video_playback_id || null;
+// Parse video_narrative (4-act video data)
+let videoData: any = null;
+try {
+  videoData = typeof article.video_narrative === 'string'
+    ? JSON.parse(article.video_narrative)
+    : article.video_narrative;
+} catch (e) {
+  console.error('Failed to parse video_narrative:', e);
+}
 
-// Content is already HTML with Tailwind classes - no parsing needed
-const html = article.content;
+// Parse payload for structured content (sections, FAQ, callouts, etc.)
+let fourActContent: any[] = [];
+let faq: any[] = [];
+let callouts: any[] = [];
+let statHighlight: any = null;
+let comparison: any = null;
+let timeline: any[] = [];
+let sources: any[] = [];
+
+try {
+  const payload = typeof article.payload === 'string'
+    ? JSON.parse(article.payload)
+    : article.payload;
+  if (payload) {
+    fourActContent = payload.four_act_content || payload.sections || [];
+    faq = payload.faq || [];
+    callouts = payload.callouts || [];
+    statHighlight = payload.stat_highlight || null;
+    comparison = payload.comparison || null;
+    timeline = payload.timeline || [];
+    sources = payload.sources || [];
+  }
+} catch (e) {
+  console.error('Failed to parse payload:', e);
+}
+
+// Get playback ID from video_narrative or direct field
+const playbackId = videoData?.playback_id || article.video_playback_id;
+
+// Act timestamps for bounded video loops
+const actTimestamps = [
+  { start: 0, end: 3, mid: 1.5, label: 'Act 1' },
+  { start: 3, end: 6, mid: 4.5, label: 'Act 2' },
+  { start: 6, end: 9, mid: 7.5, label: 'Act 3' },
+  { start: 9, end: 12, mid: 10.5, label: 'Act 4' }
+];
+
+// Helper to get Mux thumbnail URL
+function getMuxThumbnail(time: number, width: number = 800) {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=${width}`;
+}
+
+// Helper to get Mux stream URL
+function getMuxStream() {
+  if (!playbackId) return '';
+  return `https://stream.mux.com/${playbackId}.m3u8`;
+}
+
+// Split content by H2 headers to match with fourActContent sections
+function splitContentBySections(html: string): string[] {
+  if (!html) return [];
+  // Split on H2 tags but keep the content
+  const sections = html.split(/<h2[^>]*>/i);
+  return sections.map((s, i) => {
+    if (i === 0) return s; // Preamble before first H2
+    return '<h2>' + s;
+  }).filter(s => s.trim());
+}
+
+const contentSections = splitContentBySections(article.content || '');
+
+// Clean up excerpt
+let excerpt = article.excerpt || '';
+if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.endsWith('?')) {
+  const lastSentence = Math.max(excerpt.lastIndexOf('.'), excerpt.lastIndexOf('?'), excerpt.lastIndexOf('!'));
+  if (lastSentence > excerpt.length * 0.5) {
+    excerpt = excerpt.substring(0, lastSentence + 1);
+  } else {
+    excerpt = excerpt.trim() + '...';
+  }
+}
 ---
 
 <!DOCTYPE html>
@@ -48,134 +127,441 @@ const html = article.content;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{article.title} - Relocation Quest</title>
-  <meta name="description" content={article.excerpt || article.title}>
+  <meta name="description" content={excerpt || article.title}>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://unpkg.com/@mux/mux-player"></script>
+  <style>
+    .thumbnail-overlay {
+      position: relative;
+      overflow: hidden;
+    }
+    .thumbnail-overlay video,
+    .thumbnail-overlay img {
+      transition: transform 0.3s ease;
+    }
+    .thumbnail-overlay:hover video,
+    .thumbnail-overlay:hover img {
+      transform: scale(1.02);
+    }
+    .thumbnail-gradient {
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 100%);
+    }
+    .brand-badge {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .factoid {
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+      border-left: 3px solid #f59e0b;
+    }
+    .chapter-marker {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .chapter-marker:hover {
+      transform: scale(1.05);
+    }
+    .prose h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    .prose p {
+      color: #374151;
+      line-height: 1.75;
+      margin-bottom: 1rem;
+    }
+    .prose a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+    .prose ul, .prose ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+    .prose li {
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+  </style>
 </head>
-<body class="bg-gray-50">
-  <!-- Navigation -->
-  <nav class="bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
-          <h1 class="text-2xl font-bold text-blue-600">
-            <a href="/">Relocation Quest</a>
-          </h1>
+<body class="bg-white">
+  <!-- Hero Section with Video -->
+  {playbackId ? (
+    <header class="relative bg-gray-900">
+      <div class="max-w-6xl mx-auto">
+        <mux-player
+          playback-id={playbackId}
+          accent-color="#f59e0b"
+          autoplay="muted"
+          loop
+          class="w-full aspect-video"
+        />
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
+        <div class="max-w-4xl mx-auto">
+          {article.article_angle && (
+            <span class="text-amber-400 text-sm font-semibold uppercase tracking-wider">{article.article_angle}</span>
+          )}
+          <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">{article.title}</h1>
+          {excerpt && (
+            <p class="text-xl text-gray-200">{excerpt}</p>
+          )}
         </div>
-        <div class="flex items-center space-x-8">
-          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
+      </div>
+    </header>
+  ) : (
+    <header class="bg-gray-100 py-16">
+      <div class="max-w-4xl mx-auto px-4">
+        {article.article_angle && (
+          <span class="text-amber-600 text-sm font-semibold uppercase tracking-wider">{article.article_angle}</span>
+        )}
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mt-2 mb-4">{article.title}</h1>
+        {excerpt && (
+          <p class="text-xl text-gray-600">{excerpt}</p>
+        )}
+      </div>
+    </header>
+  )}
+
+  <!-- Chapter Timeline (only if we have video and 4-act content) -->
+  {playbackId && fourActContent.length >= 4 && (
+    <div class="bg-gray-900 py-4">
+      <div class="max-w-4xl mx-auto px-4">
+        <div class="flex items-center gap-2">
+          <span class="text-gray-500 text-xs uppercase tracking-wider mr-2">Chapters</span>
+          <div class="flex-1 flex items-center gap-1">
+            {fourActContent.slice(0, 4).map((section, i) => {
+              const colors = ['blue', 'purple', 'amber', 'emerald'];
+              const color = colors[i] || 'gray';
+              return (
+                <button onclick={`seekTo(${i * 3})`} class="chapter-marker flex-1 group">
+                  <div class={`h-1 bg-${color}-500/60 rounded-full group-hover:bg-${color}-400`}></div>
+                  <span class="text-xs text-gray-400 mt-1 block truncate">{section.video_title || `Act ${i + 1}`}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
-  </nav>
+  )}
 
-  <!-- Article Content -->
-  <article class="py-12">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Article Header -->
-      <header class="mb-8">
-        {article.article_angle && (
-          <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-4">
-            {article.article_angle}
-          </span>
+  <script>
+    function seekTo(time) {
+      const player = document.querySelector('mux-player');
+      if (player) player.currentTime = time;
+    }
+  </script>
+
+  <main class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Preamble (content before first H2) -->
+    {contentSections[0] && !contentSections[0].startsWith('<h2') && (
+      <div class="prose prose-lg max-w-none mb-12">
+        <div set:html={contentSections[0]} />
+      </div>
+    )}
+
+    <!-- 4-Act Sections -->
+    {fourActContent.slice(0, 4).map((section, i) => {
+      const actTime = actTimestamps[i];
+      const sectionContent = contentSections.find(c => c.includes(section.title)) || '';
+      const calloutForSection = callouts.find(c => c.placement === `after_section_${i + 1}`);
+
+      return (
+        <section class="mb-16">
+          <!-- Section Header with Video Loop -->
+          {playbackId && (
+            <div class="thumbnail-overlay rounded-xl mb-6">
+              <video
+                id={`section-video-${i}`}
+                class="w-full aspect-[21/9] object-cover rounded-xl"
+                muted
+                playsinline
+                loop
+                poster={getMuxThumbnail(actTime.mid)}
+              />
+              <div class="absolute inset-0 thumbnail-gradient rounded-xl pointer-events-none"></div>
+              <div class="absolute top-3 right-3">
+                <span class="brand-badge text-white/80">Relocation Quest</span>
+              </div>
+              <div class="absolute bottom-4 left-4 right-4">
+                <h2 class="text-xl md:text-2xl font-bold text-white drop-shadow-lg">{section.title}</h2>
+                {section.factoid && (
+                  <p class="text-white/80 text-sm mt-1 drop-shadow">{section.factoid}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {playbackId && (
+            <script define:vars={{ videoId: `section-video-${i}`, streamUrl: getMuxStream(), startTime: actTime.start, endTime: actTime.end }}>
+              (function() {
+                const video = document.getElementById(videoId);
+                if (!video || typeof Hls === 'undefined') return;
+                const hls = new Hls();
+                hls.loadSource(streamUrl);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                  video.currentTime = startTime;
+                  video.play().catch(() => {});
+                });
+                video.addEventListener('timeupdate', function() {
+                  if (video.currentTime >= endTime) video.currentTime = startTime;
+                });
+                const observer = new IntersectionObserver((entries) => {
+                  entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                      video.play().catch(() => {});
+                    } else {
+                      video.pause();
+                    }
+                  });
+                }, { threshold: 0.3 });
+                observer.observe(video);
+              })();
+            </script>
+          )}
+
+          <!-- Section Content -->
+          {sectionContent ? (
+            <div class="prose prose-lg max-w-none" set:html={sectionContent} />
+          ) : (
+            <div class="prose prose-lg max-w-none">
+              <h2>{section.title}</h2>
+            </div>
+          )}
+
+          <!-- Callout after section (if any) -->
+          {calloutForSection && (
+            <div class="my-8 bg-amber-50 border-l-4 border-amber-400 rounded-r-xl overflow-hidden">
+              <div class="flex flex-col md:flex-row">
+                {playbackId && (
+                  <div class="md:w-1/3">
+                    <img src={getMuxThumbnail(actTime.mid - 1, 600)} alt="" class="w-full h-48 md:h-full object-cover" />
+                  </div>
+                )}
+                <div class={`p-6 ${playbackId ? 'md:w-2/3' : 'w-full'}`}>
+                  <h3 class="text-lg font-bold text-amber-800 mb-2">
+                    {calloutForSection.type === 'pro_tip' ? '💡 ' : calloutForSection.type === 'warning' ? '⚠️ ' : ''}
+                    {calloutForSection.title}
+                  </h3>
+                  <p class="text-amber-900">{calloutForSection.content}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      );
+    })}
+
+    <!-- Comparison Table (if present) -->
+    {comparison && comparison.items && comparison.items.length > 0 && (
+      <section class="mb-16">
+        {playbackId && (
+          <div class="thumbnail-overlay rounded-xl mb-6">
+            <img src={getMuxThumbnail(6, 800)} alt="" class="w-full aspect-[21/9] object-cover rounded-xl" />
+            <div class="absolute inset-0 thumbnail-gradient rounded-xl"></div>
+            <div class="absolute bottom-4 left-6">
+              <h2 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{comparison.title || 'Comparison'}</h2>
+            </div>
+          </div>
         )}
-        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-          {article.title}
-        </h1>
-        <div class="flex items-center text-sm text-gray-500 mb-8">
-          <time datetime={article.published_at || article.created_at}>
-            {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="p-4 font-semibold">Option</th>
+                {Object.keys(comparison.items[0] || {}).filter(k => k !== 'name').map(col => (
+                  <th class="p-4 font-semibold capitalize">{col.replace(/_/g, ' ')}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.items.map((item, i) => (
+                <tr class={`border-b ${i === 0 ? 'bg-amber-50 font-semibold' : ''}`}>
+                  <td class="p-4">{item.name}</td>
+                  {Object.entries(item).filter(([k]) => k !== 'name').map(([_, v]) => (
+                    <td class="p-4">{v}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )}
+
+    <!-- Timeline (if present) -->
+    {timeline && timeline.length > 0 && (
+      <section class="mb-16">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Timeline</h2>
+        <div class="relative">
+          <div class="absolute left-1/2 transform -translate-x-px h-full w-0.5 bg-gray-200"></div>
+          <div class="space-y-8">
+            {timeline.map((event, i) => {
+              const isLeft = i % 2 === 0;
+              const thumbTime = actTimestamps[i % 4]?.mid || 1.5;
+              return (
+                <div class="flex items-center">
+                  {isLeft ? (
+                    <>
+                      <div class="w-1/2 pr-8 text-right">
+                        <div class="inline-block">
+                          {playbackId && (
+                            <img src={getMuxThumbnail(thumbTime, 800)} alt="" class="w-32 h-20 object-cover rounded-lg mb-2 ml-auto" />
+                          )}
+                          <span class="text-amber-600 font-semibold">{event.date}</span>
+                          <h4 class="font-bold text-gray-900">{event.title}</h4>
+                          <p class="text-sm text-gray-600">{event.description}</p>
+                        </div>
+                      </div>
+                      <div class="w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow z-10"></div>
+                      <div class="w-1/2 pl-8"></div>
+                    </>
+                  ) : (
+                    <>
+                      <div class="w-1/2 pr-8"></div>
+                      <div class="w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow z-10"></div>
+                      <div class="w-1/2 pl-8">
+                        <div class="inline-block">
+                          {playbackId && (
+                            <img src={getMuxThumbnail(thumbTime, 800)} alt="" class="w-32 h-20 object-cover rounded-lg mb-2" />
+                          )}
+                          <span class="text-amber-600 font-semibold">{event.date}</span>
+                          <h4 class="font-bold text-gray-900">{event.title}</h4>
+                          <p class="text-sm text-gray-600">{event.description}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Stat Highlight (if present) -->
+    {statHighlight && (
+      <section class="mb-16 -mx-4 md:-mx-8 lg:-mx-16">
+        <div class="relative py-16 px-8 overflow-hidden">
+          {playbackId && (
+            <div class="absolute inset-0">
+              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-20" />
+              <div class="absolute inset-0 bg-gradient-to-r from-amber-50 via-white/80 to-amber-50"></div>
+            </div>
+          )}
+          <div class="relative max-w-3xl mx-auto text-center">
+            <span class="text-amber-600 text-sm font-semibold uppercase tracking-wider">Key Takeaway</span>
+            <p class="text-3xl md:text-4xl font-bold text-gray-900 mt-4 mb-6" set:html={statHighlight.headline} />
+            {statHighlight.stats && (
+              <div class="flex justify-center gap-8 mt-8">
+                {statHighlight.stats.map(stat => (
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-gray-900">{stat.value}</div>
+                    <div class="text-sm text-gray-500">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- FAQ Section (if present) -->
+    {faq && faq.length > 0 && (
+      <section class="mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 mb-8">Frequently Asked Questions</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          {faq.map((item, i) => {
+            const thumbTime = actTimestamps[i % 4]?.mid || 1.5;
+            return (
+              <div class="bg-gray-50 rounded-xl overflow-hidden">
+                {playbackId && (
+                  <img src={getMuxThumbnail(thumbTime, 400)} alt="" class="w-full h-32 object-cover opacity-60" />
+                )}
+                <div class={`p-6 ${playbackId ? '-mt-8' : ''} relative`}>
+                  <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h3 class="font-bold text-gray-900 mb-2">{item.q}</h3>
+                    <p class="text-gray-600 text-sm">{item.a}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+    <!-- Sources Section (if present) -->
+    {sources && sources.length > 0 && (
+      <section class="relative rounded-xl overflow-hidden mb-12">
+        {playbackId && (
+          <div class="absolute inset-0">
+            <img src={getMuxThumbnail(10.5, 800)} alt="" class="w-full h-full object-cover opacity-10" />
+            <div class="absolute inset-0 bg-gradient-to-br from-gray-50 via-white/90 to-gray-50"></div>
+          </div>
+        )}
+        <div class="relative p-8">
+          <h3 class="font-semibold text-gray-900 mb-4">Sources & References</h3>
+          <div class="grid md:grid-cols-3 gap-4">
+            {sources.map((source, i) => {
+              const thumbTime = actTimestamps[i % 4]?.mid || 1.5;
+              return (
+                <a href={source.url} target="_blank" rel="noopener" class="flex items-center gap-3 p-3 bg-white/60 rounded-lg hover:bg-white transition">
+                  {playbackId && (
+                    <img src={getMuxThumbnail(thumbTime, 400)} alt="" class="w-12 h-12 object-cover rounded" />
+                  )}
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">{source.name}</p>
+                    {source.description && (
+                      <p class="text-xs text-gray-500">{source.description}</p>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Article Footer -->
+    <footer class="pt-8 border-t">
+      <div class="flex items-center gap-4">
+        {playbackId && (
+          <img src={getMuxThumbnail(10.5, 800)} alt="" class="w-16 h-16 object-cover rounded-full border-2 border-amber-200" />
+        )}
+        <div>
+          <p class="text-sm font-medium text-gray-900">Relocation Quest Editorial Team</p>
+          <p class="text-xs text-gray-500">
+            Published {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            })}
-          </time>
+            })} • {article.word_count} words
+          </p>
         </div>
-
-        <!-- Hero Video or Image - Mux video supersedes image when present -->
-        {muxHeroPlaybackId ? (
-          <div class="mb-8" style="position: relative;">
-            <video
-              id="hero-video"
-              autoplay
-              muted
-              loop
-              playsinline
-              poster={`https://image.mux.com/${muxHeroPlaybackId}/thumbnail.jpg?width=1200&height=675&fit_mode=smartcrop`}
-              class="w-full h-auto rounded-lg shadow-lg"
-              style="max-height: 600px; object-fit: cover; cursor: pointer;"
-              onclick="this.play()"
-            ></video>
-          </div>
-        ) : article.hero_asset_url && (
-          <div class="mb-8">
-            <img
-              src={article.hero_asset_url}
-              alt={article.hero_asset_alt || article.title}
-              title={article.hero_asset_title || article.title}
-              class="w-full h-auto rounded-lg shadow-lg"
-            />
-          </div>
-        )}
-      </header>
-
-      <!-- Article Body - content already has Tailwind classes -->
-      <div class="bg-white rounded-lg shadow-sm p-8 md:p-12">
-        <div set:html={html} class="article-content max-w-none" />
       </div>
-
-      <style>
-        /* Ensure article content styling works with Tailwind CDN */
-        .article-content a {
-          color: #2563eb;
-          text-decoration: underline;
-        }
-        .article-content a:hover {
-          color: #1d4ed8;
-        }
-        .article-content h2 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #111827;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-        }
-        .article-content p {
-          color: #374151;
-          line-height: 1.75;
-          margin-bottom: 1rem;
-        }
-        .article-content ul, .article-content ol {
-          margin-bottom: 1.5rem;
-          padding-left: 1.5rem;
-        }
-        .article-content li {
-          margin-bottom: 0.5rem;
-          color: #374151;
-        }
-        .article-content blockquote {
-          border-left: 4px solid #3b82f6;
-          padding-left: 1rem;
-          margin: 1.5rem 0;
-          font-style: italic;
-          color: #4b5563;
-        }
-        .article-content mux-player {
-          width: 100%;
-          border-radius: 0.5rem;
-          overflow: hidden;
-        }
-      </style>
-
-      <!-- Back Link -->
-      <div class="mt-12">
-        <a href="/" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+      <div class="mt-6">
+        <a href="/" class="inline-flex items-center text-amber-600 hover:text-amber-800 font-medium">
           ← Back to articles
         </a>
       </div>
-    </div>
-  </article>
+    </footer>
+  </main>
 
   <!-- Footer -->
   <footer class="bg-gray-900 text-white py-12 mt-16">
@@ -183,35 +569,5 @@ const html = article.content;
       <p class="text-gray-400">© {new Date().getFullYear()} Relocation Quest. All rights reserved.</p>
     </div>
   </footer>
-
-  {muxHeroPlaybackId && (
-    <script is:inline define:vars={{ playbackId: muxHeroPlaybackId }}>
-      const video = document.querySelector('#hero-video');
-      if (video && playbackId) {
-        const videoSrc = `https://stream.mux.com/${playbackId}.m3u8`;
-
-        if (Hls.isSupported()) {
-          const hls = new Hls();
-          hls.loadSource(videoSrc);
-          hls.attachMedia(video);
-
-          hls.on(Hls.Events.MANIFEST_PARSED, function() {
-            console.log('Mux video loaded successfully');
-            video.play().catch(e => console.log('Autoplay prevented:', e));
-          });
-
-          hls.on(Hls.Events.ERROR, function(event, data) {
-            console.error('HLS error:', data);
-          });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = videoSrc;
-          video.addEventListener('loadedmetadata', function() {
-            console.log('Mux video loaded (Safari)');
-            video.play().catch(e => console.log('Autoplay prevented:', e));
-          });
-        }
-      }
-    </script>
-  )}
 </body>
 </html>
