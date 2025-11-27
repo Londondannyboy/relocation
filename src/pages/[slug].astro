@@ -37,6 +37,18 @@ if (!article) {
   return Astro.redirect('/');
 }
 
+// Fetch related articles
+const relatedResult = await sql`
+  SELECT slug, title, meta_description, video_playback_id, article_angle
+  FROM articles
+  WHERE app = 'relocation'
+    AND slug != ${slug}
+    AND published_at IS NOT NULL
+  ORDER BY created_at DESC
+  LIMIT 3
+`;
+const relatedArticles = relatedResult || [];
+
 // Parse video_narrative (4-act video data)
 let videoData: any = null;
 try {
@@ -96,13 +108,30 @@ function getMuxStream() {
   return `https://stream.mux.com/${playbackId}.m3u8`;
 }
 
+// Country flag emoji mapping
+const countryFlags: Record<string, string> = {
+  'cyprus': '🇨🇾', 'portugal': '🇵🇹', 'spain': '🇪🇸', 'greece': '🇬🇷',
+  'italy': '🇮🇹', 'malta': '🇲🇹', 'croatia': '🇭🇷', 'estonia': '🇪🇪',
+  'germany': '🇩🇪', 'france': '🇫🇷', 'netherlands': '🇳🇱', 'uk': '🇬🇧',
+  'uae': '🇦🇪', 'dubai': '🇦🇪', 'singapore': '🇸🇬', 'usa': '🇺🇸',
+  'canada': '🇨🇦', 'australia': '🇦🇺', 'thailand': '🇹🇭', 'indonesia': '🇮🇩',
+  'mexico': '🇲🇽', 'costa rica': '🇨🇷', 'brazil': '🇧🇷'
+};
+
+function getCountryFlag(name: string): string {
+  const lower = name.toLowerCase();
+  for (const [country, flag] of Object.entries(countryFlags)) {
+    if (lower.includes(country)) return flag;
+  }
+  return '🌍';
+}
+
 // Split content by H2 headers to match with fourActContent sections
 function splitContentBySections(html: string): string[] {
   if (!html) return [];
-  // Split on H2 tags but keep the content
   const sections = html.split(/<h2[^>]*>/i);
   return sections.map((s, i) => {
-    if (i === 0) return s; // Preamble before first H2
+    if (i === 0) return s;
     return '<h2>' + s;
   }).filter(s => s.trim());
 }
@@ -157,10 +186,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
-    .factoid {
-      background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
-      border-left: 3px solid #f59e0b;
-    }
     .chapter-marker {
       cursor: pointer;
       transition: all 0.2s ease;
@@ -177,20 +202,108 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     }
     .prose p {
       color: #374151;
-      line-height: 1.75;
-      margin-bottom: 1rem;
+      line-height: 1.85;
+      margin-bottom: 1.5rem;  /* Increased spacing between paragraphs */
+    }
+    .prose p + p {
+      margin-top: 1.5rem;  /* Extra spacing between consecutive paragraphs */
+    }
+    .prose strong, .prose b {
+      color: #1f2937;
+      font-weight: 700;
+      background: linear-gradient(120deg, #fef3c7 0%, #fde68a 100%);
+      padding: 0 0.25rem;
+      border-radius: 0.125rem;
     }
     .prose a {
-      color: #2563eb;
+      color: #d97706;
       text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .prose a:hover {
+      color: #b45309;
     }
     .prose ul, .prose ol {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.75rem;
       padding-left: 1.5rem;
     }
     .prose li {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       color: #374151;
+      line-height: 1.7;
+    }
+    .prose li strong {
+      display: inline;
+    }
+    .pull-quote {
+      position: relative;
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fff 100%);
+      padding: 2rem 2.5rem;
+      margin: 2.5rem 0;
+      font-size: 1.35rem;
+      font-style: italic;
+      color: #1f2937;
+      border-radius: 0 1rem 1rem 0;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+    }
+    .pull-quote::before {
+      content: '"';
+      position: absolute;
+      top: -0.5rem;
+      left: 1rem;
+      font-size: 4rem;
+      color: #f59e0b;
+      opacity: 0.3;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .callout-card {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 1rem;
+      padding: 1.5rem 2rem;
+      margin: 2rem 0;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2);
+    }
+    .callout-card h4 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 0.75rem;
+    }
+    .callout-card p {
+      color: #78350f;
+      font-size: 1.05rem;
+      line-height: 1.6;
+    }
+    .translucent-section {
+      position: relative;
+      overflow: hidden;
+    }
+    .translucent-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0.08;
+      filter: blur(2px);
+    }
+    .country-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+    .country-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .country-card.featured {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #f59e0b;
     }
   </style>
 </head>
@@ -233,7 +346,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     </header>
   )}
 
-  <!-- Chapter Timeline (only if we have video and 4-act content) -->
+  <!-- Chapter Timeline with Progress Bar -->
   {playbackId && fourActContent.length >= 4 && (
     <div class="bg-gray-900 py-4">
       <div class="max-w-4xl mx-auto px-4">
@@ -243,10 +356,12 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             {fourActContent.slice(0, 4).map((section, i) => {
               const colors = ['blue', 'purple', 'amber', 'emerald'];
               const color = colors[i] || 'gray';
+              // Use section title, shortened if too long - NOT "Act I/II/III/IV"
+              const chapterLabel = section.video_title || section.title?.split(':')[0]?.substring(0, 20) || `Part ${i + 1}`;
               return (
                 <button onclick={`seekTo(${i * 3})`} class="chapter-marker flex-1 group">
                   <div class={`h-1 bg-${color}-500/60 rounded-full group-hover:bg-${color}-400`}></div>
-                  <span class="text-xs text-gray-400 mt-1 block truncate">{section.video_title || `Act ${i + 1}`}</span>
+                  <span class="text-xs text-gray-400 mt-1 block truncate">{chapterLabel}</span>
                 </button>
               );
             })}
@@ -271,23 +386,53 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </div>
     )}
 
+    <!-- Video Progress Divider - Aesthetic text breaker -->
+    {playbackId && (
+      <div class="my-12 flex items-center justify-center gap-3 text-xs text-gray-400 font-mono">
+        <span class="w-8 h-px bg-gradient-to-r from-transparent to-gray-300"></span>
+        <span class="text-blue-500">0s</span>
+        <span class="w-12 h-px bg-blue-300/50"></span>
+        <span class="text-purple-500">3s</span>
+        <span class="w-12 h-px bg-purple-300/50"></span>
+        <span class="text-amber-500">6s</span>
+        <span class="w-12 h-px bg-amber-300/50"></span>
+        <span class="text-emerald-500">9s</span>
+        <span class="w-12 h-px bg-emerald-300/50"></span>
+        <span class="text-emerald-600">12s</span>
+        <span class="w-8 h-px bg-gradient-to-l from-transparent to-gray-300"></span>
+      </div>
+    )}
+
     <!-- 4-Act Sections -->
     {fourActContent.slice(0, 4).map((section, i) => {
       const actTime = actTimestamps[i];
       const sectionContent = contentSections.find(c => c.includes(section.title)) || '';
       const calloutForSection = callouts.find(c => c.placement === `after_section_${i + 1}`);
+      const showTimeline = i === 0 && timeline.length > 0;  // After section 1, moved higher
+      const showRelated = i === 1 && relatedArticles.length > 0;
+      const useTranslucentBg = i === 3;
 
       return (
-        <section class="mb-16">
+        <section class={`mb-16 ${useTranslucentBg ? 'relative' : ''}`}>
+          {/* Translucent background for final section */}
+          {useTranslucentBg && playbackId && (
+            <div class="absolute inset-0 -mx-4 md:-mx-8 rounded-2xl overflow-hidden -z-10">
+              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-[0.06]" />
+              <div class="absolute inset-0 bg-gradient-to-br from-amber-50/50 via-white/80 to-amber-50/50"></div>
+            </div>
+          )}
+
           <!-- Section Header with Video Loop -->
           {playbackId && (
             <div class="thumbnail-overlay rounded-xl mb-6">
               <video
                 id={`section-video-${i}`}
                 class="w-full aspect-[21/9] object-cover rounded-xl"
+                autoplay
                 muted
                 playsinline
                 loop
+                preload="auto"
                 poster={getMuxThumbnail(actTime.mid)}
               />
               <div class="absolute inset-0 thumbnail-gradient rounded-xl pointer-events-none"></div>
@@ -308,26 +453,51 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
               (function() {
                 const video = document.getElementById(videoId);
                 if (!video || typeof Hls === 'undefined') return;
-                const hls = new Hls();
+
+                let hlsReady = false;
+                const hls = new Hls({ autoStartLoad: true });
                 hls.loadSource(streamUrl);
                 hls.attachMedia(video);
+
+                // Try play when ready
+                function tryPlay() {
+                  if (hlsReady && video.paused) {
+                    video.currentTime = startTime;
+                    video.play().catch(() => {});
+                  }
+                }
+
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                  hlsReady = true;
                   video.currentTime = startTime;
+                  // Immediate play attempt
                   video.play().catch(() => {});
                 });
+
+                // Also try on canplay event
+                video.addEventListener('canplay', tryPlay, { once: true });
+
+                // Bounded loop within act timestamps
                 video.addEventListener('timeupdate', function() {
-                  if (video.currentTime >= endTime) video.currentTime = startTime;
+                  if (video.currentTime >= endTime || video.currentTime < startTime) {
+                    video.currentTime = startTime;
+                  }
                 });
+
+                // Visibility-based play/pause with lower threshold
                 const observer = new IntersectionObserver((entries) => {
                   entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                      video.play().catch(() => {});
+                      tryPlay();
                     } else {
                       video.pause();
                     }
                   });
-                }, { threshold: 0.3 });
+                }, { threshold: 0.2, rootMargin: '50px' });
                 observer.observe(video);
+
+                // Retry play on user interaction (mobile fix)
+                document.addEventListener('click', tryPlay, { once: true });
               })();
             </script>
           )}
@@ -338,6 +508,13 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           ) : (
             <div class="prose prose-lg max-w-none">
               <h2>{section.title}</h2>
+            </div>
+          )}
+
+          <!-- Pull Quote (mid-section text breaker) -->
+          {i === 0 && section.factoid && (
+            <div class="pull-quote">
+              "{section.factoid}"
             </div>
           )}
 
@@ -360,11 +537,70 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
               </div>
             </div>
           )}
+
+          <!-- Related Articles (text breaker after section 2) -->
+          {showRelated && (
+            <div class="my-12 py-8 border-t border-b border-gray-100">
+              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Related Reading</h3>
+              <div class="grid md:grid-cols-3 gap-4">
+                {relatedArticles.map((related, ri) => {
+                  const relatedThumb = related.video_playback_id
+                    ? `https://image.mux.com/${related.video_playback_id}/thumbnail.jpg?time=${actTimestamps[ri % 4].mid}&width=400`
+                    : null;
+                  return (
+                    <a href={`/${related.slug}`} class="group block bg-gray-50 rounded-lg overflow-hidden hover:bg-gray-100 transition">
+                      {relatedThumb && (
+                        <img src={relatedThumb} alt="" class="w-full h-24 object-cover opacity-80 group-hover:opacity-100 transition" />
+                      )}
+                      <div class="p-3">
+                        <p class="font-medium text-gray-900 text-sm line-clamp-2 group-hover:text-amber-600 transition">{related.title}</p>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <!-- Timeline (text breaker in section 3) -->
+          {showTimeline && (
+            <div class="my-12">
+              <h3 class="text-lg font-bold text-gray-900 mb-6">Key Milestones</h3>
+              <div class="relative">
+                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-400 via-amber-300 to-amber-200"></div>
+                <div class="space-y-6">
+                  {timeline.slice(0, 4).map((event, ti) => (
+                    <div class="flex items-start gap-4 pl-4">
+                      <div class="w-3 h-3 bg-amber-500 rounded-full mt-1.5 -ml-[7px] ring-4 ring-white"></div>
+                      <div class="flex-1 bg-gray-50 rounded-lg p-4">
+                        <span class="text-amber-600 text-xs font-semibold">{event.date}</span>
+                        <h4 class="font-bold text-gray-900">{event.title}</h4>
+                        <p class="text-sm text-gray-600">{event.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <!-- Progress divider between sections -->
+          {i < 3 && playbackId && (
+            <div class="my-10 flex items-center justify-center gap-2 text-[10px] text-gray-300 font-mono">
+              {actTimestamps.map((t, ti) => (
+                <>
+                  <span class={ti <= i ? 'text-amber-400' : 'text-gray-300'}>{t.start}s</span>
+                  {ti < 3 && <span class={`w-8 h-px ${ti <= i ? 'bg-amber-300' : 'bg-gray-200'}`}></span>}
+                </>
+              ))}
+              <span class={i >= 3 ? 'text-amber-400' : 'text-gray-300'}>12s</span>
+            </div>
+          )}
         </section>
       );
     })}
 
-    <!-- Comparison Table (if present) -->
+    <!-- Country Comparison Cards (instead of plain table) -->
     {comparison && comparison.items && comparison.items.length > 0 && (
       <section class="mb-16">
         {playbackId && (
@@ -372,82 +608,34 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             <img src={getMuxThumbnail(6, 800)} alt="" class="w-full aspect-[21/9] object-cover rounded-xl" />
             <div class="absolute inset-0 thumbnail-gradient rounded-xl"></div>
             <div class="absolute bottom-4 left-6">
-              <h2 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{comparison.title || 'Comparison'}</h2>
+              <h2 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">{comparison.title || 'Compare Your Options'}</h2>
             </div>
           </div>
         )}
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-gray-100">
-                <th class="p-4 font-semibold">Option</th>
-                {Object.keys(comparison.items[0] || {}).filter(k => k !== 'name').map(col => (
-                  <th class="p-4 font-semibold capitalize">{col.replace(/_/g, ' ')}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {comparison.items.map((item, i) => (
-                <tr class={`border-b ${i === 0 ? 'bg-amber-50 font-semibold' : ''}`}>
-                  <td class="p-4">{item.name}</td>
-                  {Object.entries(item).filter(([k]) => k !== 'name').map(([_, v]) => (
-                    <td class="p-4">{v}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    )}
 
-    <!-- Timeline (if present) -->
-    {timeline && timeline.length > 0 && (
-      <section class="mb-16">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Timeline</h2>
-        <div class="relative">
-          <div class="absolute left-1/2 transform -translate-x-px h-full w-0.5 bg-gray-200"></div>
-          <div class="space-y-8">
-            {timeline.map((event, i) => {
-              const isLeft = i % 2 === 0;
-              const thumbTime = actTimestamps[i % 4]?.mid || 1.5;
-              return (
-                <div class="flex items-center">
-                  {isLeft ? (
-                    <>
-                      <div class="w-1/2 pr-8 text-right">
-                        <div class="inline-block">
-                          {playbackId && (
-                            <img src={getMuxThumbnail(thumbTime, 800)} alt="" class="w-32 h-20 object-cover rounded-lg mb-2 ml-auto" />
-                          )}
-                          <span class="text-amber-600 font-semibold">{event.date}</span>
-                          <h4 class="font-bold text-gray-900">{event.title}</h4>
-                          <p class="text-sm text-gray-600">{event.description}</p>
+        <div class="grid md:grid-cols-2 gap-4">
+          {comparison.items.map((item, i) => {
+            const flag = getCountryFlag(item.name);
+            const isFeatured = i === 0;
+            return (
+              <div class={`country-card rounded-xl p-5 ${isFeatured ? 'featured md:col-span-2' : ''}`}>
+                <div class="flex items-start gap-4">
+                  <span class="text-4xl">{flag}</span>
+                  <div class="flex-1">
+                    <h3 class={`font-bold ${isFeatured ? 'text-xl text-amber-900' : 'text-lg text-gray-900'}`}>{item.name}</h3>
+                    <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                      {Object.entries(item).filter(([k]) => k !== 'name').map(([key, value]) => (
+                        <div>
+                          <span class="text-gray-500 text-xs uppercase tracking-wider">{key.replace(/_/g, ' ')}</span>
+                          <p class={`font-medium ${isFeatured ? 'text-amber-800' : 'text-gray-900'}`}>{value}</p>
                         </div>
-                      </div>
-                      <div class="w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow z-10"></div>
-                      <div class="w-1/2 pl-8"></div>
-                    </>
-                  ) : (
-                    <>
-                      <div class="w-1/2 pr-8"></div>
-                      <div class="w-4 h-4 bg-amber-500 rounded-full border-4 border-white shadow z-10"></div>
-                      <div class="w-1/2 pl-8">
-                        <div class="inline-block">
-                          {playbackId && (
-                            <img src={getMuxThumbnail(thumbTime, 800)} alt="" class="w-32 h-20 object-cover rounded-lg mb-2" />
-                          )}
-                          <span class="text-amber-600 font-semibold">{event.date}</span>
-                          <h4 class="font-bold text-gray-900">{event.title}</h4>
-                          <p class="text-sm text-gray-600">{event.description}</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </section>
     )}
@@ -458,8 +646,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
         <div class="relative py-16 px-8 overflow-hidden">
           {playbackId && (
             <div class="absolute inset-0">
-              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-20" />
-              <div class="absolute inset-0 bg-gradient-to-r from-amber-50 via-white/80 to-amber-50"></div>
+              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-[0.12]" />
+              <div class="absolute inset-0 bg-gradient-to-r from-amber-50 via-white/90 to-amber-50"></div>
             </div>
           )}
           <div class="relative max-w-3xl mx-auto text-center">
@@ -469,8 +657,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
               <div class="flex justify-center gap-8 mt-8">
                 {statHighlight.stats.map(stat => (
                   <div class="text-center">
-                    <div class="text-3xl font-bold text-gray-900">{stat.value}</div>
-                    <div class="text-sm text-gray-500">{stat.label}</div>
+                    <div class="text-4xl font-bold text-amber-600">{stat.value}</div>
+                    <div class="text-sm text-gray-500 mt-1">{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -569,5 +757,88 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       <p class="text-gray-400">© {new Date().getFullYear()} Relocation Quest. All rights reserved.</p>
     </div>
   </footer>
+
+  <!-- Currency Conversion Script - USD-led with local currency -->
+  <script>
+    (async function convertCurrency() {
+      // Try to get exchange rates (cache for 1 hour)
+      const cacheKey = 'rq_exchange_rates';
+      const cacheTime = 'rq_exchange_time';
+      let rates = null;
+
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        const cachedTime = localStorage.getItem(cacheTime);
+        const oneHour = 3600000;
+
+        if (cached && cachedTime && (Date.now() - parseInt(cachedTime)) < oneHour) {
+          rates = JSON.parse(cached);
+        } else {
+          const res = await fetch('https://v6.exchangerate-api.com/v6/open/latest/USD');
+          const data = await res.json();
+          if (data.rates) {
+            rates = data.rates;
+            localStorage.setItem(cacheKey, JSON.stringify(rates));
+            localStorage.setItem(cacheTime, Date.now().toString());
+          }
+        }
+      } catch (e) {
+        console.log('Currency conversion unavailable');
+        return;
+      }
+
+      if (!rates) return;
+
+      // Find all prose sections and convert currencies
+      const proseElements = document.querySelectorAll('.prose');
+
+      // Currency patterns to detect (euro-centric content)
+      const euroPattern = /€\s*([\d,]+(?:\.\d{2})?)/g;
+
+      proseElements.forEach(prose => {
+        const walker = document.createTreeWalker(prose, NodeFilter.SHOW_TEXT, null, false);
+        const nodesToUpdate = [];
+
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          if (euroPattern.test(node.textContent)) {
+            nodesToUpdate.push(node);
+          }
+          euroPattern.lastIndex = 0;
+        }
+
+        nodesToUpdate.forEach(node => {
+          const text = node.textContent;
+          const newText = text.replace(euroPattern, (match, amount) => {
+            const euroValue = parseFloat(amount.replace(/,/g, ''));
+            const eurRate = rates.EUR || 0.92;
+            const usdValue = euroValue / eurRate;
+
+            // Format USD as primary
+            const usdFormatted = new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            }).format(usdValue);
+
+            // Keep EUR as local reference
+            const eurFormatted = new Intl.NumberFormat('de-DE', {
+              style: 'currency',
+              currency: 'EUR',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            }).format(euroValue);
+
+            return `${usdFormatted} (${eurFormatted})`;
+          });
+
+          if (newText !== text) {
+            node.textContent = newText;
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
