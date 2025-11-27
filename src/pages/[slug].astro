@@ -433,9 +433,9 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   </style>
 </head>
 <body class="bg-white">
-  <!-- Hero Section with Video -->
+  <!-- Hero Section with Video - Clean video, title below -->
   {playbackId ? (
-    <header class="relative bg-gray-900">
+    <header class="bg-gray-900">
       <div class="max-w-6xl mx-auto">
         <mux-player
           playback-id={playbackId}
@@ -444,17 +444,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           loop
           class="w-full aspect-video"
         />
-      </div>
-      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
-        <div class="max-w-4xl mx-auto">
-          {article.article_angle && (
-            <span class="text-amber-400 text-sm font-semibold uppercase tracking-wider">{article.article_angle}</span>
-          )}
-          <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">{article.title}</h1>
-          {excerpt && (
-            <p class="text-xl text-gray-200">{excerpt}</p>
-          )}
-        </div>
       </div>
     </header>
   ) : (
@@ -481,26 +470,38 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     </div>
   )}
 
-  <!-- Chapter Timeline with Progress Bar -->
-  {playbackId && fourActContent.length >= 4 && (
-    <div class="bg-gray-900 py-4">
+  <!-- Title Section - Below video, clean and bold -->
+  {playbackId && (
+    <div class="bg-gray-900 pt-6 pb-4">
       <div class="max-w-4xl mx-auto px-4">
-        <div class="flex items-center gap-2">
-          <span class="text-gray-500 text-xs uppercase tracking-wider mr-2">Chapters</span>
-          <div class="flex-1 flex items-center gap-1">
-            {fourActContent.slice(0, 4).map((section, i) => {
-              const colors = ['blue', 'purple', 'amber', 'emerald'];
-              const color = colors[i] || 'gray';
-              // Use section title, shortened if too long - NOT "Act I/II/III/IV"
-              const chapterLabel = section.video_title || section.title?.split(':')[0]?.substring(0, 20) || `Part ${i + 1}`;
-              return (
-                <button onclick={`seekTo(${i * 3})`} class="chapter-marker flex-1 group">
-                  <div class={`h-1 bg-${color}-500/60 rounded-full group-hover:bg-${color}-400`}></div>
-                  <span class="text-xs text-gray-400 mt-1 block truncate">{chapterLabel}</span>
-                </button>
-              );
-            })}
-          </div>
+        {article.article_angle && (
+          <span class="text-amber-400 text-xs font-semibold uppercase tracking-wider">{article.article_angle}</span>
+        )}
+        <h1 class="text-2xl md:text-4xl font-bold text-white mt-1 mb-2">{article.title}</h1>
+        {excerpt && (
+          <p class="text-sm md:text-base text-gray-300 font-medium">{excerpt}</p>
+        )}
+      </div>
+    </div>
+  )}
+
+  <!-- Chapter Timeline - Stacked on mobile -->
+  {playbackId && fourActContent.length >= 4 && (
+    <div class="bg-gray-900 pb-4">
+      <div class="max-w-4xl mx-auto px-4">
+        <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Chapters</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {fourActContent.slice(0, 4).map((section, i) => {
+            const colors = ['blue', 'purple', 'amber', 'emerald'];
+            const color = colors[i] || 'gray';
+            const chapterLabel = section.video_title || section.title?.split(':')[0]?.substring(0, 20) || `Part ${i + 1}`;
+            return (
+              <button onclick={`seekTo(${i * 3})`} class="chapter-marker group text-left">
+                <div class={`h-1 bg-${color}-500/60 rounded-full group-hover:bg-${color}-400 mb-1`}></div>
+                <span class="text-xs text-gray-400 block truncate">{chapterLabel}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -528,7 +529,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </div>
     )}
 
-    <!-- 4-Act Ticker Tape - Animated GIF Chapter Navigation -->
+    <!-- 4-Act Ticker Tape - HLS Video Chapter Navigation -->
     {playbackId && fourActContent.length >= 4 && (
       <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
@@ -536,16 +537,18 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             const actTime = actTimestamps[i];
             const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
             const actTitle = section.video_title || actTitles[i];
-            // Mux animated GIF URL for each act segment
-            const gifUrl = `https://image.mux.com/${playbackId}/animated.gif?start=${actTime.start}&end=${actTime.end}&width=480&fps=12`;
             return (
               <button onclick={`seekTo(${actTime.start})`} class="bg-gray-800 rounded-lg overflow-hidden text-left hover:bg-gray-700 transition group">
-                <img
-                  src={gifUrl}
-                  alt={actTitle}
-                  class="w-full aspect-video object-cover"
-                  loading="lazy"
-                />
+                <video
+                  class="ticker-video w-full aspect-video object-cover"
+                  muted
+                  playsinline
+                  loop
+                  poster={getMuxThumbnail(actTime.mid, 480)}
+                  data-hls={getMuxStream()}
+                  data-start={actTime.start}
+                  data-end={actTime.end}
+                ></video>
                 <div class="p-3">
                   <h3 class="font-semibold text-white text-sm">{actTitle}</h3>
                   <p class="text-xs text-gray-400 mt-1 line-clamp-2">{section.factoid || `${actTime.start}-${actTime.end}s`}</p>
@@ -594,15 +597,19 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- Section Header with Animated GIF (bounded loop via Mux) -->
+          <!-- Section Header with HLS Video (bounded loop) -->
           {playbackId && (
             <div class="thumbnail-overlay rounded-xl mb-6">
-              <img
-                src={`https://image.mux.com/${playbackId}/animated.gif?start=${actTime.start}&end=${actTime.end}&width=640&fps=15`}
-                alt={section.title}
-                class="w-full aspect-[21/9] object-cover rounded-xl"
-                loading="lazy"
-              />
+              <video
+                class="section-video w-full aspect-[21/9] object-cover rounded-xl"
+                muted
+                playsinline
+                loop
+                poster={getMuxThumbnail(actTime.mid, 800)}
+                data-hls={getMuxStream()}
+                data-start={actTime.start}
+                data-end={actTime.end}
+              ></video>
               <div class="absolute inset-0 thumbnail-gradient rounded-xl pointer-events-none"></div>
               <div class="absolute top-3 right-3">
                 <span class="brand-badge text-white/80">Relocation Quest</span>
@@ -698,7 +705,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- 2x2 Storyline GIF Grid (text breaker after section 3) -->
+          <!-- 2x2 Storyline HLS Video Grid (text breaker after section 3) -->
           {showStoryline && (
             <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
               <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 text-center">The Story So Far</h3>
@@ -706,16 +713,19 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                 {fourActContent.slice(0, 4).map((act, ai) => {
                   const actT = actTimestamps[ai];
                   const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
-                  const gifUrl = `https://image.mux.com/${playbackId}/animated.gif?start=${actT.start}&end=${actT.end}&width=480&fps=12`;
                   return (
                     <div class="bg-gray-800 rounded-lg overflow-hidden">
                       <div class="relative">
-                        <img
-                          src={gifUrl}
-                          alt={act.video_title || actTitles[ai]}
-                          class="w-full aspect-video object-cover"
-                          loading="lazy"
-                        />
+                        <video
+                          class="storyline-video w-full aspect-video object-cover"
+                          muted
+                          playsinline
+                          loop
+                          poster={getMuxThumbnail(actT.mid, 480)}
+                          data-hls={getMuxStream()}
+                          data-start={actT.start}
+                          data-end={actT.end}
+                        ></video>
                         <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white font-medium">
                           {act.video_title || actTitles[ai]}
                         </div>
@@ -1110,6 +1120,56 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       if (html !== el.innerHTML) {
         el.innerHTML = html;
       }
+    });
+  </script>
+
+  <!-- HLS Video Init Script - Chapter-bounded video loops -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Hls === 'undefined' || !Hls.isSupported()) {
+        console.log('HLS not supported, falling back to poster images');
+        return;
+      }
+
+      const videos = document.querySelectorAll('[data-hls]');
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      videos.forEach(function(video) {
+        const hlsUrl = video.dataset.hls;
+        const start = parseFloat(video.dataset.start) || 0;
+        const end = parseFloat(video.dataset.end) || 3;
+
+        if (!hlsUrl) return;
+
+        const hls = new Hls();
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.currentTime = start;
+        });
+
+        // Loop within chapter bounds
+        video.addEventListener('timeupdate', function() {
+          if (video.currentTime >= end) {
+            video.currentTime = start;
+          }
+        });
+
+        // IntersectionObserver for play/pause on visibility
+        if (!prefersReducedMotion) {
+          const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+                video.play().catch(function() {});
+              } else {
+                video.pause();
+              }
+            });
+          }, { threshold: 0.3 });
+          observer.observe(video);
+        }
+      });
     });
   </script>
 </body>
