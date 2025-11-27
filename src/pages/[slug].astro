@@ -553,12 +553,12 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       const useTranslucentBg = i === 3;
 
       return (
-        <section class={`mb-16 ${useTranslucentBg ? 'relative' : ''}`}>
-          {/* Translucent background for final section */}
+        <section class={`mb-16 ${useTranslucentBg ? 'relative bg-gradient-to-br from-amber-50/80 to-orange-50/60 -mx-4 md:-mx-8 px-4 md:px-8 py-8 rounded-2xl' : ''}`}>
+          {/* Translucent video background for final section */}
           {useTranslucentBg && playbackId && (
-            <div class="absolute inset-0 -mx-4 md:-mx-8 rounded-2xl overflow-hidden -z-10">
-              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-[0.06]" />
-              <div class="absolute inset-0 bg-gradient-to-br from-amber-50/50 via-white/80 to-amber-50/50"></div>
+            <div class="absolute inset-0 rounded-2xl overflow-hidden -z-10">
+              <img src={getMuxThumbnail(10, 1600)} alt="" class="w-full h-full object-cover opacity-[0.15] blur-[1px]" />
+              <div class="absolute inset-0 bg-gradient-to-br from-amber-50/40 via-white/50 to-orange-50/40"></div>
             </div>
           )}
 
