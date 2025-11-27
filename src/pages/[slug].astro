@@ -496,7 +496,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </div>
     )}
 
-    <!-- 4-Act Ticker Tape - Visual Chapter Navigation -->
+    <!-- 4-Act Ticker Tape - Animated GIF Chapter Navigation -->
     {playbackId && fourActContent.length >= 4 && (
       <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
@@ -504,12 +504,15 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             const actTime = actTimestamps[i];
             const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
             const actTitle = section.video_title || actTitles[i];
+            // Mux animated GIF URL for each act segment
+            const gifUrl = `https://image.mux.com/${playbackId}/animated.gif?start=${actTime.start}&end=${actTime.end}&width=480&fps=12`;
             return (
               <button onclick={`seekTo(${actTime.start})`} class="bg-gray-800 rounded-lg overflow-hidden text-left hover:bg-gray-700 transition group">
                 <img
-                  src={getMuxThumbnail(actTime.mid, 400)}
+                  src={gifUrl}
                   alt={actTitle}
-                  class="w-full aspect-video object-cover group-hover:scale-105 transition"
+                  class="w-full aspect-video object-cover"
+                  loading="lazy"
                 />
                 <div class="p-3">
                   <h3 class="font-semibold text-white text-sm">{actTitle}</h3>
