@@ -562,18 +562,14 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- Section Header with Video Loop -->
+          <!-- Section Header with Animated GIF (bounded loop via Mux) -->
           {playbackId && (
             <div class="thumbnail-overlay rounded-xl mb-6">
-              <video
-                id={`section-video-${i}`}
+              <img
+                src={`https://image.mux.com/${playbackId}/animated.gif?start=${actTime.start}&end=${actTime.end}&width=1200&fps=15`}
+                alt={section.title}
                 class="w-full aspect-[21/9] object-cover rounded-xl"
-                autoplay
-                muted
-                playsinline
-                loop
-                preload="auto"
-                poster={getMuxThumbnail(actTime.mid)}
+                loading="lazy"
               />
               <div class="absolute inset-0 thumbnail-gradient rounded-xl pointer-events-none"></div>
               <div class="absolute top-3 right-3">
@@ -586,35 +582,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                 )}
               </div>
             </div>
-          )}
-
-          {playbackId && (
-            <Fragment set:html={`<script>
-              (function() {
-                var video = document.getElementById('section-video-${i}');
-                if (!video || typeof Hls === 'undefined') return;
-                var hls = new Hls();
-                hls.loadSource('${getMuxStream()}');
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                  video.currentTime = ${actTime.start};
-                  video.play().catch(function() {});
-                });
-                video.addEventListener('timeupdate', function() {
-                  if (video.currentTime >= ${actTime.end}) video.currentTime = ${actTime.start};
-                });
-                var observer = new IntersectionObserver(function(entries) {
-                  entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                      video.play().catch(function() {});
-                    } else {
-                      video.pause();
-                    }
-                  });
-                }, { threshold: 0.3 });
-                observer.observe(video);
-              })();
-            </script>`} />
           )}
 
           <!-- Section Content -->
@@ -699,7 +666,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- 2x2 Storyline Video Grid (text breaker after section 3) -->
+          <!-- 2x2 Storyline GIF Grid (text breaker after section 3) -->
           {showStoryline && (
             <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
               <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 text-center">The Story So Far</h3>
@@ -707,17 +674,15 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                 {fourActContent.slice(0, 4).map((act, ai) => {
                   const actT = actTimestamps[ai];
                   const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
+                  const gifUrl = `https://image.mux.com/${playbackId}/animated.gif?start=${actT.start}&end=${actT.end}&width=480&fps=12`;
                   return (
                     <div class="bg-gray-800 rounded-lg overflow-hidden">
                       <div class="relative">
-                        <video
-                          id={`storyline-video-${ai}`}
+                        <img
+                          src={gifUrl}
+                          alt={act.video_title || actTitles[ai]}
                           class="w-full aspect-video object-cover"
-                          muted
-                          playsinline
-                          loop
-                          autoplay
-                          poster={getMuxThumbnail(actT.mid, 400)}
+                          loading="lazy"
                         />
                         <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white font-medium">
                           {act.video_title || actTitles[ai]}
@@ -730,23 +695,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                   );
                 })}
               </div>
-              <Fragment set:html={`<script>
-                document.querySelectorAll('[id^="storyline-video-"]').forEach(function(video, idx) {
-                  if (typeof Hls === 'undefined') return;
-                  var starts = [0, 3, 6, 9];
-                  var ends = [3, 6, 9, 12];
-                  var hls = new Hls();
-                  hls.loadSource('${getMuxStream()}');
-                  hls.attachMedia(video);
-                  hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.currentTime = starts[idx];
-                    video.play().catch(function() {});
-                  });
-                  video.addEventListener('timeupdate', function() {
-                    if (video.currentTime >= ends[idx]) video.currentTime = starts[idx];
-                  });
-                });
-              </script>`} />
             </div>
           )}
 
