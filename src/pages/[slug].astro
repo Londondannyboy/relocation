@@ -430,6 +430,74 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
         font-size: 1.25rem;
       }
     }
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-fade-in {
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+    .animate-pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    .animate-shimmer {
+      background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+      background-size: 200% 100%;
+      animation: shimmer 2s linear infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    /* Scroll-triggered animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    /* Visual break cards */
+    .visual-break {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin: 2rem -1rem;
+    }
+    .visual-break-amber {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);
+      background-size: 200% 100%;
+      animation: shimmer 3s linear infinite;
+    }
+    /* Stat counter style */
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    }
   </style>
 </head>
 <body class="bg-white">
@@ -470,12 +538,12 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     </div>
   )}
 
-  <!-- Title Section - Below video, clean and bold -->
+  <!-- Title Section - Below video, clean and bold with animation -->
   {playbackId && (
     <div class="bg-gray-900 pt-6 pb-4">
-      <div class="max-w-4xl mx-auto px-4">
+      <div class="max-w-4xl mx-auto px-4 animate-fade-in">
         {article.article_angle && (
-          <span class="text-amber-400 text-xs font-semibold uppercase tracking-wider">{article.article_angle}</span>
+          <span class="text-amber-400 text-xs font-semibold uppercase tracking-wider animate-shimmer">{article.article_angle}</span>
         )}
         <h1 class="text-2xl md:text-4xl font-bold text-white mt-1 mb-2">{article.title}</h1>
         {excerpt && (
@@ -582,9 +650,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       const actTime = actTimestamps[i];
       const sectionContent = contentSections.find(c => c.includes(section.title)) || '';
       const calloutForSection = callouts.find(c => c.placement === `after_section_${i + 1}`);
-      const showTimeline = i === 0 && timeline.length > 0;  // After section 1, moved higher
-      const showRelated = i === 1 && relatedArticles.length > 0;
-      const showStoryline = i === 2 && playbackId;  // 2x2 video grid after section 3
+      const showTimeline = i === 2 && timeline.length > 0;  // After section 3
+      const showStoryline = i === 1 && playbackId;  // 2x2 video grid after section 2 (middle of content)
       const useTranslucentBg = i === 3;
 
       return (
@@ -634,8 +701,30 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
           <!-- Pull Quote (mid-section text breaker) -->
           {i === 0 && section.factoid && (
-            <div class="pull-quote">
+            <div class="pull-quote reveal">
               "{section.factoid}"
+            </div>
+          )}
+
+          <!-- Visual Stat Break after section 1 - Mobile content breaker -->
+          {i === 0 && playbackId && (
+            <div class="visual-break my-8 reveal">
+              <div class="flex items-center justify-center gap-6 text-white">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-amber-400 animate-float">🌴</div>
+                  <div class="text-xs text-gray-400 mt-1">300+ Days Sun</div>
+                </div>
+                <div class="w-px h-12 bg-gray-700"></div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-amber-400 animate-float" style="animation-delay: 0.5s">💼</div>
+                  <div class="text-xs text-gray-400 mt-1">Remote Work Ready</div>
+                </div>
+                <div class="w-px h-12 bg-gray-700"></div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-amber-400 animate-float" style="animation-delay: 1s">🇪🇺</div>
+                  <div class="text-xs text-gray-400 mt-1">EU Access</div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -659,29 +748,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- Related Articles (text breaker after section 2) -->
-          {showRelated && (
-            <div class="my-12 py-8 border-t border-b border-gray-100">
-              <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Related Reading</h3>
-              <div class="grid md:grid-cols-3 gap-4">
-                {relatedArticles.map((related, ri) => {
-                  const relatedThumb = related.video_playback_id
-                    ? `https://image.mux.com/${related.video_playback_id}/thumbnail.jpg?time=${actTimestamps[ri % 4].mid}&width=400`
-                    : null;
-                  return (
-                    <a href={`/${related.slug}`} class="group block bg-gray-50 rounded-lg overflow-hidden hover:bg-gray-100 transition">
-                      {relatedThumb && (
-                        <img src={relatedThumb} alt="" class="w-full h-24 object-cover opacity-80 group-hover:opacity-100 transition" />
-                      )}
-                      <div class="p-3">
-                        <p class="font-medium text-gray-900 text-sm line-clamp-2 group-hover:text-amber-600 transition">{related.title}</p>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           <!-- Timeline (text breaker in section 3) -->
           {showTimeline && (
@@ -705,16 +771,20 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
             </div>
           )}
 
-          <!-- 2x2 Storyline HLS Video Grid (text breaker after section 3) -->
+          <!-- 2x2 Storyline HLS Video Grid - Visual content break -->
           {showStoryline && (
-            <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
-              <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 text-center">The Story So Far</h3>
-              <div class="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+            <div class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-10 my-12 rounded-none md:rounded-2xl reveal">
+              <div class="text-center mb-6">
+                <span class="stat-pill animate-pulse-glow">🎬 Your Journey in 12 Seconds</span>
+              </div>
+              <h3 class="text-lg font-bold text-white mb-6 text-center">The Story So Far</h3>
+              <div class="grid grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
                 {fourActContent.slice(0, 4).map((act, ai) => {
                   const actT = actTimestamps[ai];
                   const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
+                  const colors = ['from-blue-500', 'from-purple-500', 'from-amber-500', 'from-emerald-500'];
                   return (
-                    <div class="bg-gray-800 rounded-lg overflow-hidden">
+                    <div class={`bg-gray-800 rounded-xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-${colors[ai].split('-')[1]}-500/20`}>
                       <div class="relative">
                         <video
                           class="storyline-video w-full aspect-video object-cover"
@@ -726,16 +796,25 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                           data-start={actT.start}
                           data-end={actT.end}
                         ></video>
-                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded text-xs text-white font-medium">
-                          {act.video_title || actTitles[ai]}
+                        <div class={`absolute inset-0 bg-gradient-to-t ${colors[ai]} to-transparent opacity-30`}></div>
+                        <div class="absolute top-2 left-2 bg-black/70 px-2 py-1 rounded-full text-xs text-white font-semibold">
+                          {ai + 1}. {act.video_title || actTitles[ai]}
+                        </div>
+                        <div class="absolute bottom-2 right-2 bg-amber-500 text-black px-2 py-0.5 rounded text-[10px] font-bold">
+                          {actT.start}-{actT.end}s
                         </div>
                       </div>
-                      <div class="p-3">
-                        <p class="text-xs text-gray-400 line-clamp-2">{act.factoid}</p>
+                      <div class="p-3 border-t border-gray-700">
+                        <p class="text-xs text-gray-300 line-clamp-2 font-medium">{act.factoid}</p>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+              <div class="text-center mt-6">
+                <button onclick="document.querySelector('mux-player').scrollIntoView({behavior:'smooth'})" class="text-amber-400 text-sm font-medium hover:text-amber-300 transition">
+                  ↑ Watch Full Video
+                </button>
               </div>
             </div>
           )}
@@ -1169,6 +1248,25 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           }, { threshold: 0.3 });
           observer.observe(video);
         }
+      });
+    });
+  </script>
+
+  <!-- Scroll Reveal Animation Script -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      const revealElements = document.querySelectorAll('.reveal');
+
+      const revealObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      revealElements.forEach(function(el) {
+        revealObserver.observe(el);
       });
     });
   </script>
