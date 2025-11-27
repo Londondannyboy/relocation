@@ -589,57 +589,32 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           )}
 
           {playbackId && (
-            <script define:vars={{ videoId: `section-video-${i}`, streamUrl: getMuxStream(), startTime: actTime.start, endTime: actTime.end }}>
+            <Fragment set:html={`<script>
               (function() {
-                const video = document.getElementById(videoId);
+                var video = document.getElementById('section-video-${i}');
                 if (!video || typeof Hls === 'undefined') return;
-
-                let hlsReady = false;
-                const hls = new Hls({ autoStartLoad: true });
-                hls.loadSource(streamUrl);
+                var hls = new Hls();
+                hls.loadSource('${getMuxStream()}');
                 hls.attachMedia(video);
-
-                // Try play when ready
-                function tryPlay() {
-                  if (hlsReady && video.paused) {
-                    video.currentTime = startTime;
-                    video.play().catch(() => {});
-                  }
-                }
-
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                  hlsReady = true;
-                  video.currentTime = startTime;
-                  // Immediate play attempt
-                  video.play().catch(() => {});
+                  video.currentTime = ${actTime.start};
+                  video.play().catch(function() {});
                 });
-
-                // Also try on canplay event
-                video.addEventListener('canplay', tryPlay, { once: true });
-
-                // Bounded loop within act timestamps
                 video.addEventListener('timeupdate', function() {
-                  if (video.currentTime >= endTime || video.currentTime < startTime) {
-                    video.currentTime = startTime;
-                  }
+                  if (video.currentTime >= ${actTime.end}) video.currentTime = ${actTime.start};
                 });
-
-                // Visibility-based play/pause with lower threshold
-                const observer = new IntersectionObserver((entries) => {
-                  entries.forEach(entry => {
+                var observer = new IntersectionObserver(function(entries) {
+                  entries.forEach(function(entry) {
                     if (entry.isIntersecting) {
-                      tryPlay();
+                      video.play().catch(function() {});
                     } else {
                       video.pause();
                     }
                   });
-                }, { threshold: 0.2, rootMargin: '50px' });
+                }, { threshold: 0.3 });
                 observer.observe(video);
-
-                // Retry play on user interaction (mobile fix)
-                document.addEventListener('click', tryPlay, { once: true });
               })();
-            </script>
+            </script>`} />
           )}
 
           <!-- Section Content -->
@@ -755,24 +730,23 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                   );
                 })}
               </div>
-              <script define:vars={{ streamUrl: getMuxStream() }}>
-                document.querySelectorAll('[id^="storyline-video-"]').forEach((video, idx) => {
-                  if (typeof Hls !== 'undefined') {
-                    const starts = [0, 3, 6, 9];
-                    const ends = [3, 6, 9, 12];
-                    const hls = new Hls();
-                    hls.loadSource(streamUrl);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                      video.currentTime = starts[idx];
-                      video.play().catch(() => {});
-                    });
-                    video.addEventListener('timeupdate', () => {
-                      if (video.currentTime >= ends[idx]) video.currentTime = starts[idx];
-                    });
-                  }
+              <Fragment set:html={`<script>
+                document.querySelectorAll('[id^="storyline-video-"]').forEach(function(video, idx) {
+                  if (typeof Hls === 'undefined') return;
+                  var starts = [0, 3, 6, 9];
+                  var ends = [3, 6, 9, 12];
+                  var hls = new Hls();
+                  hls.loadSource('${getMuxStream()}');
+                  hls.attachMedia(video);
+                  hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.currentTime = starts[idx];
+                    video.play().catch(function() {});
+                  });
+                  video.addEventListener('timeupdate', function() {
+                    if (video.currentTime >= ends[idx]) video.currentTime = starts[idx];
+                  });
                 });
-              </script>
+              </script>`} />
             </div>
           )}
 
