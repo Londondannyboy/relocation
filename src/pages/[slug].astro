@@ -496,6 +496,32 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </div>
     )}
 
+    <!-- 4-Act Ticker Tape - Visual Chapter Navigation -->
+    {playbackId && fourActContent.length >= 4 && (
+      <div class="bg-gray-900 -mx-4 md:-mx-8 lg:-mx-16 px-4 md:px-8 lg:px-16 py-8 my-12 rounded-none md:rounded-2xl">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-5xl mx-auto">
+          {fourActContent.slice(0, 4).map((section, i) => {
+            const actTime = actTimestamps[i];
+            const actTitles = ['The Grind', 'The Dream', 'The Journey', 'The Reality'];
+            const actTitle = section.video_title || actTitles[i];
+            return (
+              <button onclick={`seekTo(${actTime.start})`} class="bg-gray-800 rounded-lg overflow-hidden text-left hover:bg-gray-700 transition group">
+                <img
+                  src={getMuxThumbnail(actTime.mid, 400)}
+                  alt={actTitle}
+                  class="w-full aspect-video object-cover group-hover:scale-105 transition"
+                />
+                <div class="p-3">
+                  <h3 class="font-semibold text-white text-sm">{actTitle}</h3>
+                  <p class="text-xs text-gray-400 mt-1 line-clamp-2">{section.factoid || `${actTime.start}-${actTime.end}s`}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    )}
+
     <!-- Video Progress Divider - Aesthetic text breaker -->
     {playbackId && (
       <div class="my-12 flex items-center justify-center gap-3 text-xs text-gray-400 font-mono">
