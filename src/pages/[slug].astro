@@ -174,12 +174,18 @@ function splitContentBySections(html: string): string[] {
 
 const contentSections = splitContentBySections(article.content || '');
 
+// Helper to strip script tags from content (JSON-LD etc. breaks set:html)
+function stripScriptTags(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+}
+
 // Content modes for country guides (Story/Guide/YOLO)
 const hasContentModes = !!(article.content_story || article.content_guide || article.content_yolo);
 const contentModes = {
-  story: article.content_story || article.content || '',
-  guide: article.content_guide || '',
-  yolo: article.content_yolo || ''
+  story: stripScriptTags(article.content_story || article.content || ''),
+  guide: stripScriptTags(article.content_guide || ''),
+  yolo: stripScriptTags(article.content_yolo || '')
 };
 
 // Parse voices for testimonials
@@ -747,16 +753,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       if (player) player.currentTime = time;
     }
   </script>
-
-  <!-- DEBUG: Check if containers exist -->
-  <div id="debug-info" class="bg-red-100 border border-red-400 p-2 text-xs font-mono">
-    <strong>DEBUG v2:</strong>
-    hasContentModes={hasContentModes ? 'true' : 'false'} |
-    story={contentModes.story?.length || 0} |
-    guide={contentModes.guide?.length || 0} |
-    yolo={contentModes.yolo?.length || 0} |
-    voices={voices.length}
-  </div>
 
   <!-- Content Mode Toggle (Story/Guide/YOLO) for Country Guides -->
   {hasContentModes && (
