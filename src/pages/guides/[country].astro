@@ -33,7 +33,8 @@ if (!countryData) {
 // Fetch the country guide article
 const guideResult = await sql`
   SELECT
-    id, title, content, meta_description as excerpt, slug,
+    id, title, content, content_story, content_guide, content_yolo, content_voices,
+    meta_description as excerpt, slug,
     published_at, video_playback_id, video_narrative, payload
   FROM articles
   WHERE country_code = ${countryData.code}
@@ -80,6 +81,24 @@ if (countryData.facts) {
 
 // Get playback ID
 const playbackId = videoData?.playback_id || guide?.video_playback_id;
+
+// Content modes for Story/Guide/YOLO/Voices
+const hasContentModes = !!(guide?.content_story || guide?.content_guide || guide?.content_yolo);
+const contentModes = {
+  story: guide?.content_story || guide?.content || '',
+  guide: guide?.content_guide || '',
+  yolo: guide?.content_yolo || ''
+};
+
+// Parse voices
+let voices: any[] = [];
+try {
+  voices = typeof guide?.content_voices === 'string'
+    ? JSON.parse(guide.content_voices)
+    : (guide?.content_voices || []);
+} catch (e) {
+  console.error('Failed to parse voices:', e);
+}
 
 // Four act content for video chapters
 const fourActContent = guidePayload.four_act_content || [];
