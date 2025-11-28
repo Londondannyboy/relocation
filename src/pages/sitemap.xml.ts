@@ -2,6 +2,9 @@
 import type { APIRoute } from 'astro';
 import { sql } from '../lib/db';
 
+// Force static generation at build time
+export const prerender = true;
+
 const BASE_URL = 'https://relocation.quest';
 
 // Static pages
