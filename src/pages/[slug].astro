@@ -215,7 +215,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind is provided by @astrojs/tailwind integration - no CDN needed -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://unpkg.com/@mux/mux-player"></script>
   <style>
@@ -744,17 +744,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       if (player) player.currentTime = time;
     }
   </script>
-
-  <!-- DEBUG: Content Mode Data -->
-  {hasContentModes && (
-    <div class="bg-yellow-100 border border-yellow-400 p-2 text-xs font-mono">
-      <strong>DEBUG:</strong>
-      story={contentModes.story?.length || 0} chars |
-      guide={contentModes.guide?.length || 0} chars |
-      yolo={contentModes.yolo?.length || 0} chars |
-      voices={voices.length}
-    </div>
-  )}
 
   <!-- Content Mode Toggle (Story/Guide/YOLO) for Country Guides -->
   {hasContentModes && (
@@ -1657,16 +1646,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     // Switch content mode
     function switchMode(mode) {
-      console.log('Switching to mode:', mode);
-
-      // DEBUG: Check what containers exist
-      const containers = document.querySelectorAll('.content-mode');
-      console.log('Content mode containers found:', containers.length);
-      containers.forEach(c => console.log('  -', c.id, 'innerHTML length:', c.innerHTML.length));
-
-      const targetContainer = document.getElementById('content-' + mode);
-      console.log('Target container:', 'content-' + mode, 'exists:', !!targetContainer);
-
       // Update button styles
       document.querySelectorAll('.mode-btn').forEach(btn => {
         const btnMode = btn.getAttribute('data-mode');
