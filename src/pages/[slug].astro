@@ -1174,6 +1174,15 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </section>
     )}
 
+    <!-- Story Content (shown by default when content modes exist) -->
+    {hasContentModes && contentModes.story && (
+      <div id="content-story" class="content-mode">
+        <div class="prose prose-lg max-w-none">
+          <div set:html={contentModes.story} />
+        </div>
+      </div>
+    )}
+
     <!-- Guide Content (hidden by default) -->
     {hasContentModes && contentModes.guide && (
       <div id="content-guide" class="content-mode hidden">
@@ -1664,26 +1673,19 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
         descEl.textContent = modeDescriptions[mode];
       }
 
-      // Get all story content (original content)
-      const storyElements = getStoryElements();
+      // Get all default page content (videos, FAQ, etc.) - NOT the content-mode containers
+      const defaultElements = getStoryElements();
 
-      // Hide/show content based on mode
-      if (mode === 'story') {
-        // Show story content, hide mode containers
-        storyElements.forEach(el => el.style.display = '');
-        document.querySelectorAll('.content-mode').forEach(el => el.classList.add('hidden'));
-      } else {
-        // Hide story content
-        storyElements.forEach(el => el.style.display = 'none');
+      // Hide default page elements when content modes are active
+      defaultElements.forEach(el => el.style.display = 'none');
 
-        // Hide all mode containers first
-        document.querySelectorAll('.content-mode').forEach(el => el.classList.add('hidden'));
+      // Hide all mode containers first
+      document.querySelectorAll('.content-mode').forEach(el => el.classList.add('hidden'));
 
-        // Show the selected mode container
-        const targetContainer = document.getElementById('content-' + mode);
-        if (targetContainer) {
-          targetContainer.classList.remove('hidden');
-        }
+      // Show the selected mode container (story, guide, yolo, or voices)
+      const targetContainer = document.getElementById('content-' + mode);
+      if (targetContainer) {
+        targetContainer.classList.remove('hidden');
       }
 
       // Save preference
@@ -1701,14 +1703,23 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     // Make switchMode globally available
     window.switchMode = switchMode;
 
-    // Restore saved mode on page load
+    // Initialize content mode on page load
     document.addEventListener('DOMContentLoaded', function() {
-      try {
-        const savedMode = localStorage.getItem('rq_content_mode');
-        if (savedMode && document.getElementById('content-' + savedMode)) {
-          switchMode(savedMode);
+      // Check if content modes exist (content-story container present)
+      const hasContentModes = document.getElementById('content-story');
+      if (hasContentModes) {
+        try {
+          const savedMode = localStorage.getItem('rq_content_mode');
+          if (savedMode && document.getElementById('content-' + savedMode)) {
+            switchMode(savedMode);
+          } else {
+            // Default to story mode
+            switchMode('story');
+          }
+        } catch (e) {
+          switchMode('story');
         }
-      } catch (e) {}
+      }
     });
   </script>
 </body>
