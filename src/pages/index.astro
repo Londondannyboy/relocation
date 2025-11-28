@@ -29,6 +29,17 @@ const articles = await sql`
   LIMIT 6
 `;
 
+// Fetch country guides
+const countries = await sql`
+  SELECT
+    id, name, slug, code, flag_emoji, region,
+    relocation_motivations, relocation_tags, facts
+  FROM countries
+  WHERE status = 'published'
+  ORDER BY name ASC
+  LIMIT 6
+`;
+
 // Video playback IDs are now stored directly in the database (video-first architecture)
 articles.forEach((article: any) => {
   article.mux_playback_id = article.video_playback_id || null;
@@ -38,8 +49,8 @@ const sections = {
   hero: homepageContent.find((s: any) => s.section_type === 'hero'),
 };
 
-// Mux video playback ID - can be moved to database later
-const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
+// Mux video playback ID - using Placement's video
+const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
 ---
 
 <!DOCTYPE html>
@@ -115,7 +126,7 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
 
     .nav-links a:hover { opacity: 0.6; }
 
-    /* Hero with Mux Video */
+    /* Hero with Mux Video - Placement style */
     .hero {
       height: 100vh;
       position: relative;
@@ -125,7 +136,16 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       overflow: hidden;
     }
 
-    .hero-video {
+    .hero-carousel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .hero-carousel-item {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -134,9 +154,18 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       width: auto;
       height: auto;
       transform: translate(-50%, -50%);
-      object-fit: cover;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
       z-index: 0;
+    }
+
+    .hero-carousel-item.active {
       opacity: 0.7;
+      z-index: 1;
+    }
+
+    .hero-video {
+      object-fit: cover;
     }
 
     .hero-overlay {
@@ -146,71 +175,22 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       z-index: 1;
     }
 
-    .hero-content {
-      position: relative;
-      z-index: 10;
-      text-align: center;
-      padding: 0 40px;
-      max-width: 1400px;
+    /* Welcome fade animation */
+    @keyframes welcomeFade {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(20px);
-      padding: 12px 28px;
-      border-radius: 100px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      margin-bottom: 40px;
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      opacity: 1;
+    .welcome-bold h1 {
+      animation: welcomeFade 1s ease-out;
     }
 
-    .hero-badge::before {
-      content: '';
-      width: 10px;
-      height: 10px;
-      background: #10b981;
-      border-radius: 50%;
-      margin-right: 12px;
-      animation: pulse 2s ease-in-out infinite;
+    .welcome-bold p {
+      animation: welcomeFade 1s ease-out 0.2s both;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
-    }
-
-    .hero h1 {
-      font-size: clamp(48px, 8vw, 140px);
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: -0.03em;
-      margin-bottom: 40px;
-      text-transform: uppercase;
-      text-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      opacity: 1;
-    }
-
-    .hero-subtitle {
-      font-size: clamp(18px, 2.5vw, 28px);
-      font-weight: 300;
-      line-height: 1.7;
-      max-width: 900px;
-      margin: 0 auto 60px;
-      opacity: 1;
-    }
-
-    .hero-cta {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-      opacity: 1;
+    .welcome-bold .hero-cta {
+      animation: welcomeFade 1s ease-out 0.4s both;
     }
 
     .btn {
@@ -679,28 +659,49 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
     <div class="logo">Relocation Quest</div>
     <ul class="nav-links">
       <li><a href="/">Home</a></li>
+      <li><a href="/guides">Guides</a></li>
       <li><a href="/articles">Articles</a></li>
     </ul>
   </nav>
 
-  <!-- Hero with Mux Video -->
+  <!-- Hero with Mux Video (Placement-style video-only) -->
   <section class="hero">
-    <video id="hero-video" class="hero-video" autoplay loop muted playsinline></video>
+    <div class="hero-carousel">
+      <video
+        id="hero-video"
+        class="hero-carousel-item hero-video active"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="none"
+        aria-label="Decorative background video"
+      >
+        <track kind="captions" src="" label="No captions (decorative video)" default />
+      </video>
+    </div>
     <div class="hero-overlay"></div>
+  </section>
 
-    <div class="hero-content">
-      <div class="hero-badge">The Definitive Industry Resource</div>
+  <!-- Bold Welcome Section - Full Width, Punchy -->
+  <section class="welcome-bold" style="position: relative; padding: 120px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); overflow: hidden;">
+    <!-- Decorative elements -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1920&q=80') center/cover; opacity: 0.15; mix-blend-mode: overlay;"></div>
+    <div style="position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%); border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: -150px; left: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, transparent 60%); border-radius: 50%;"></div>
 
-      <h1>
-        Start Your Relocation Journey
+    <div style="position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; text-align: center;">
+      <h1 style="font-size: clamp(56px, 10vw, 140px); font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin-bottom: 32px; text-transform: uppercase; color: #fff; text-shadow: 0 4px 60px rgba(0,0,0,0.3);">
+        YOUR NEXT<br>CHAPTER<br>STARTS HERE
       </h1>
 
-      <p class="hero-subtitle">
-        The ultimate guide to international relocation services. Corporate relocation, digital nomad visas, and expat moves made simple.
+      <p style="font-size: clamp(18px, 2.5vw, 24px); font-weight: 400; line-height: 1.6; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto 48px; text-shadow: 0 2px 20px rgba(0,0,0,0.2);">
+        The definitive guide to international relocation. Corporate moves, digital nomad visas, and expat services — worldwide.
       </p>
 
-      <div class="hero-cta">
-        <a href="/articles" class="btn btn-secondary">Read Guides</a>
+      <div class="hero-cta" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <a href="/guides" class="btn" style="background: #fff; color: #764ba2; padding: 20px 48px; border-radius: 100px; font-weight: 700; font-size: 16px; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2); transition: transform 0.3s, box-shadow 0.3s;">Explore Guides</a>
+        <a href="/articles" class="btn" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 20px 48px; border-radius: 100px; font-weight: 700; font-size: 16px; text-decoration: none; border: 2px solid rgba(255,255,255,0.4); transition: background 0.3s;">Latest Articles</a>
       </div>
     </div>
   </section>
@@ -772,6 +773,80 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       </div>
     </div>
   </section>
+
+  <!-- Country Guides Section -->
+  {countries && countries.length > 0 && (
+    <section style="background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%); padding: 100px 60px;">
+      <div class="section-header">
+        <h2>Country Guides</h2>
+        <p>Comprehensive relocation guides with visa options, tax planning, and cost of living information</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto;">
+        {countries.map((country: any) => {
+          const facts = typeof country.facts === 'string' ? JSON.parse(country.facts) : country.facts || {};
+          const motivations = country.relocation_motivations || [];
+          const motivationLabels = {
+            'corporate': 'Corporate',
+            'trust': 'Trust',
+            'wealth': 'Wealth',
+            'retirement': 'Retirement',
+            'digital-nomad': 'Digital Nomad',
+            'lifestyle': 'Lifestyle',
+            'new-start': 'New Start',
+            'family': 'Family',
+          } as any;
+
+          return (
+            <a href={`/guides/${country.slug}`} style="text-decoration: none; display: block; background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(102,126,234,0.5)'; this.style.boxShadow='0 8px 32px rgba(102,126,234,0.2)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow='none'">
+              <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                <span style="font-size: 48px;">{country.flag_emoji || '🌍'}</span>
+                <div>
+                  <h3 style="font-size: 22px; font-weight: 700; color: #fff; margin: 0;">{country.name}</h3>
+                  <p style="color: #888; font-size: 14px; margin: 4px 0 0 0;">{country.region}</p>
+                </div>
+              </div>
+
+              {motivations.length > 0 && (
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                  {motivations.slice(0, 3).map((mot: string) => (
+                    <span style="background: rgba(102,126,234,0.2); color: #a5b4fc; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                      {motivationLabels[mot] || mot}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                {facts.corporate_tax_rate && (
+                  <div>
+                    <div style="color: #666; font-size: 12px;">Corporate Tax</div>
+                    <div style="color: #fff; font-weight: 600;">{facts.corporate_tax_rate}</div>
+                  </div>
+                )}
+                {facts.cost_of_living_single && (
+                  <div>
+                    <div style="color: #666; font-size: 12px;">Cost of Living</div>
+                    <div style="color: #fff; font-weight: 600;">{facts.cost_of_living_single}</div>
+                  </div>
+                )}
+              </div>
+
+              <div style="margin-top: 16px; color: #667eea; font-weight: 600; font-size: 14px;">
+                View Guide →
+              </div>
+            </a>
+          );
+        })}
+      </div>
+
+      <div style="text-align: center; margin-top: 40px;">
+        <a href="/guides" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 30px; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 25px rgba(102,126,234,0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+          View All Country Guides
+        </a>
+      </div>
+    </section>
+  )}
 
   <!-- Companies Section -->
   <section class="companies-section">
@@ -974,67 +1049,6 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
       if (typeof gsap !== 'undefined') {
         gsap.registerPlugin(ScrollTrigger);
 
-    // Hero animations
-    gsap.to('.hero-badge', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 0.3,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero h1', {
-      opacity: 1,
-      y: 0,
-      duration: 1.2,
-      delay: 0.5,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero-subtitle', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 0.8,
-      ease: 'power3.out'
-    });
-
-    gsap.to('.hero-cta', {
-      opacity: 1,
-      y: 0,
-      duration: 1,
-      delay: 1.1,
-      ease: 'power3.out'
-    });
-
-    // Stats animation
-    gsap.utils.toArray('.stat-item').forEach((stat, i) => {
-      gsap.to(stat, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: i * 0.1,
-        scrollTrigger: {
-          trigger: stat,
-          start: 'top 85%'
-        }
-      });
-    });
-
-    // Companies cards animation
-    gsap.utils.toArray('.company-card').forEach((card, i) => {
-      gsap.to(card, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        delay: i * 0.1,
-        scrollTrigger: {
-          trigger: card,
-          start: 'top 85%'
-        }
-      });
-    });
-
         // Video parallax effect
         gsap.to('.hero-video', {
           scale: 1.2,
@@ -1044,6 +1058,47 @@ const muxPlaybackId = 'JUdKl1HO7kRD9FcNhNJLHIdgnLhLVvf3q8EmigNUYv4';
             end: 'bottom top',
             scrub: 1
           }
+        });
+
+        // Stats animation
+        gsap.utils.toArray('.stat-item').forEach((stat, i) => {
+          gsap.from(stat, {
+            opacity: 0,
+            y: 40,
+            duration: 0.8,
+            delay: i * 0.1,
+            scrollTrigger: {
+              trigger: stat,
+              start: 'top 85%'
+            }
+          });
+        });
+
+        // Portfolio items animation
+        gsap.utils.toArray('.portfolio-item').forEach((item, i) => {
+          gsap.from(item, {
+            opacity: 0,
+            y: 60,
+            duration: 1,
+            scrollTrigger: {
+              trigger: item,
+              start: 'top 85%'
+            }
+          });
+        });
+
+        // Service cards animation
+        gsap.utils.toArray('.service-card').forEach((card, i) => {
+          gsap.from(card, {
+            opacity: 0,
+            y: 40,
+            duration: 0.8,
+            delay: i * 0.05,
+            scrollTrigger: {
+              trigger: card,
+              start: 'top 85%'
+            }
+          });
         });
       }
     });
