@@ -726,6 +726,31 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
     </div>
   </section>
 
+  <!-- Featured Article: Cyprus Digital Nomad Visa -->
+  <section class="featured-video-section" style="position: relative; height: 80vh; overflow: hidden;">
+    <video
+      id="featured-video"
+      class="featured-video"
+      autoplay
+      loop
+      muted
+      playsinline
+      style="position: absolute; top: 50%; left: 50%; min-width: 100%; min-height: 100%; width: auto; height: auto; transform: translate(-50%, -50%); object-fit: cover; opacity: 0.85;"
+    ></video>
+    <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.2) 100%);"></div>
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 60px; z-index: 10;">
+      <div style="max-width: 800px;">
+        <div style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 24px;">Featured Guide</div>
+        <h2 style="font-size: clamp(36px, 5vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-shadow: 0 4px 30px rgba(0,0,0,0.5);">Cyprus Digital Nomad Visa</h2>
+        <p style="font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.9); margin-bottom: 32px; max-width: 600px;">Work from the Mediterranean. Discover how Cyprus offers remote workers sun, sea, and a streamlined visa process.</p>
+        <a href="/digital-nomad-visa-cyprus" style="display: inline-flex; align-items: center; gap: 12px; background: #fff; color: #764ba2; padding: 18px 36px; border-radius: 100px; font-weight: 700; font-size: 16px; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <span>Read Full Guide</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <!-- Portfolio-style Image Grid -->
   <section class="portfolio-section">
     <div class="portfolio-grid">
@@ -1043,6 +1068,23 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
         companiesVideo.src = heroVideoSrc;
         companiesVideo.addEventListener('loadedmetadata', function() {
           companiesVideo.play().catch(e => console.log('Companies video autoplay prevented:', e));
+        });
+      }
+
+      // Initialize featured Cyprus video
+      const featuredVideo = document.getElementById('featured-video');
+      const featuredVideoSrc = 'https://stream.mux.com/00rWZkmBHaf96WtoyFV02ucKObwWfV51rlkFo7f2PSgCM.m3u8';
+      if (featuredVideo && typeof Hls !== 'undefined' && Hls.isSupported()) {
+        const hls3 = new Hls();
+        hls3.loadSource(featuredVideoSrc);
+        hls3.attachMedia(featuredVideo);
+        hls3.on(Hls.Events.MANIFEST_PARSED, function() {
+          featuredVideo.play().catch(e => console.log('Featured video autoplay prevented:', e));
+        });
+      } else if (featuredVideo && featuredVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        featuredVideo.src = featuredVideoSrc;
+        featuredVideo.addEventListener('loadedmetadata', function() {
+          featuredVideo.play().catch(e => console.log('Featured video autoplay prevented:', e));
         });
       }
       // GSAP Animations
