@@ -1693,17 +1693,28 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       // Just switch between content-mode containers
 
       // Hide all mode containers first
-      document.querySelectorAll('.content-mode').forEach(el => {
+      const allContainers = document.querySelectorAll('.content-mode');
+      console.log('[DEBUG] Found', allContainers.length, 'content-mode containers');
+      allContainers.forEach(el => {
+        console.log('[DEBUG] Hiding:', el.id);
         el.style.display = 'none';
       });
 
       // Show the selected mode container (story, guide, yolo, or voices)
       const targetContainer = document.getElementById('content-' + mode);
+      console.log('[DEBUG] Looking for container:', 'content-' + mode, '- Found:', !!targetContainer);
       if (targetContainer) {
         targetContainer.style.display = 'block';
-        console.log('Showing container:', 'content-' + mode, 'Content length:', targetContainer.innerHTML.length);
+        targetContainer.style.visibility = 'visible';
+        targetContainer.style.opacity = '1';
+        targetContainer.style.height = 'auto';
+        console.log('[DEBUG] Showing container:', 'content-' + mode, 'Content length:', targetContainer.innerHTML.length);
       } else {
-        console.log('Container not found:', 'content-' + mode);
+        console.log('[DEBUG] Container not found:', 'content-' + mode);
+        // Fallback: show all content-mode containers
+        allContainers.forEach(el => {
+          el.style.display = 'block';
+        });
       }
 
       // Save preference
@@ -1738,19 +1749,24 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
         console.log('[DEBUG] content-story innerHTML length:', hasContentModes.innerHTML.length);
         console.log('[DEBUG] content-story first 200 chars:', hasContentModes.innerHTML.substring(0, 200));
 
+        // Server already renders story mode visible - only switch if saved preference differs
         try {
           const savedMode = localStorage.getItem('rq_content_mode');
-          if (savedMode && document.getElementById('content-' + savedMode)) {
+          if (savedMode && savedMode !== 'story' && document.getElementById('content-' + savedMode)) {
             console.log('[DEBUG] Switching to saved mode:', savedMode);
             switchMode(savedMode);
           } else {
-            // Default to story mode
-            console.log('[DEBUG] Switching to default story mode');
-            switchMode('story');
+            // Story is already visible from server render - just update button styles
+            console.log('[DEBUG] Story mode already visible, just updating UI');
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+              const isActive = btn.dataset.mode === 'story';
+              btn.style.backgroundColor = isActive ? 'white' : 'transparent';
+              btn.style.color = isActive ? '#111827' : '#6b7280';
+              btn.style.fontWeight = isActive ? '600' : '400';
+            });
           }
         } catch (e) {
-          console.log('[DEBUG] Error, falling back to story:', e);
-          switchMode('story');
+          console.log('[DEBUG] Error:', e);
         }
       }
     });
