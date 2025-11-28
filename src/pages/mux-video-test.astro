@@ -1,0 +1,486 @@
+---
+/**
+ * Mux Video Test Page with Guide/Story Mode Toggle
+ * ================================================
+ *
+ * WORKING APPROACH (from test_full_article_demo.html):
+ * - Use HLS.js to stream from Mux HLS endpoint
+ * - Loop within chapter bounds via timeupdate listener
+ * - IntersectionObserver for play/pause on visibility
+ *
+ * TWO MODES:
+ * - STORY MODE: Rich video, four-act narrative, visual energy
+ * - GUIDE MODE: Scannable checklist, facts first, authority format
+ */
+import { sql } from '../lib/db';
+
+// Fetch the Cyprus article for testing
+const articleResult = await sql`
+  SELECT
+    video_playback_id,
+    video_narrative,
+    payload,
+    title,
+    content
+  FROM articles
+  WHERE slug = 'cyprus-digital-nomad-visa-2025'
+    AND app = 'relocation'
+  LIMIT 1
+`;
+
+const article = articleResult[0];
+const playbackId = article?.video_playback_id;
+
+// Parse payload for four_act_content
+let fourActContent: any[] = [];
+let faq: any[] = [];
+let statHighlight: any = null;
+try {
+  const payload = typeof article?.payload === 'string'
+    ? JSON.parse(article.payload)
+    : article?.payload;
+  fourActContent = payload?.four_act_content || [];
+  faq = payload?.faq || [];
+  statHighlight = payload?.stat_highlight || null;
+} catch (e) {
+  console.error('Failed to parse payload:', e);
+}
+
+// Act timestamps (same as working demo)
+const actTimestamps = [
+  { start: 0, end: 3, mid: 1.5, label: 'The Grind', color: 'blue' },
+  { start: 3, end: 6, mid: 4.5, label: 'The Dream', color: 'purple' },
+  { start: 6, end: 9, mid: 7.5, label: 'The Journey', color: 'amber' },
+  { start: 9, end: 12, mid: 10.5, label: 'The Reality', color: 'emerald' }
+];
+
+// Mux URLs
+const hlsUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : '';
+
+function getThumbnail(time: number, width: number = 800) {
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=${width}`;
+}
+
+function getGifUrl(start: number, end: number) {
+  return `https://image.mux.com/${playbackId}/animated.gif?start=${start}&end=${end}&width=480&fps=12`;
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mux Video Test - Guide/Story Mode Toggle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://unpkg.com/@mux/mux-player"></script>
+  <style>
+    .thumbnail-overlay {
+      position: relative;
+      overflow: hidden;
+    }
+    .thumbnail-gradient {
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, transparent 100%);
+    }
+    .brand-badge {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .mode-toggle {
+      transition: all 0.3s ease;
+    }
+    .story-mode .guide-content { display: none; }
+    .guide-mode .story-content { display: none; }
+    .guide-mode .video-section { display: none; }
+
+    /* Guide mode styling */
+    .guide-checklist li {
+      padding: 0.75rem 1rem;
+      background: #f9fafb;
+      border-left: 3px solid #f59e0b;
+      margin-bottom: 0.5rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+    }
+    .key-stat {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .key-stat .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #92400e;
+    }
+    .key-stat .label {
+      font-size: 0.875rem;
+      color: #78350f;
+    }
+  </style>
+</head>
+<body class="bg-white story-mode" id="page-body">
+  <!-- Mode Toggle Header -->
+  <div class="sticky top-0 z-50 bg-white border-b shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <h1 class="font-bold text-gray-900">Cyprus Digital Nomad Visa 2025</h1>
+      <div class="flex items-center gap-2">
+        <button
+          id="story-btn"
+          onclick="setMode('story')"
+          class="mode-toggle px-4 py-2 rounded-lg text-sm font-medium bg-amber-100 text-amber-800"
+        >
+          Story Mode
+        </button>
+        <button
+          id="guide-btn"
+          onclick="setMode('guide')"
+          class="mode-toggle px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600"
+        >
+          Guide Mode
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setMode(mode) {
+      const body = document.getElementById('page-body');
+      const storyBtn = document.getElementById('story-btn');
+      const guideBtn = document.getElementById('guide-btn');
+
+      if (mode === 'story') {
+        body.classList.remove('guide-mode');
+        body.classList.add('story-mode');
+        storyBtn.classList.add('bg-amber-100', 'text-amber-800');
+        storyBtn.classList.remove('bg-gray-100', 'text-gray-600');
+        guideBtn.classList.remove('bg-amber-100', 'text-amber-800');
+        guideBtn.classList.add('bg-gray-100', 'text-gray-600');
+      } else {
+        body.classList.remove('story-mode');
+        body.classList.add('guide-mode');
+        guideBtn.classList.add('bg-amber-100', 'text-amber-800');
+        guideBtn.classList.remove('bg-gray-100', 'text-gray-600');
+        storyBtn.classList.remove('bg-amber-100', 'text-amber-800');
+        storyBtn.classList.add('bg-gray-100', 'text-gray-600');
+      }
+    }
+  </script>
+
+  {playbackId && (
+    <>
+      <!-- STORY MODE: Hero with Mux Player -->
+      <header class="story-content relative bg-gray-900">
+        <div class="max-w-6xl mx-auto">
+          <mux-player
+            playback-id={playbackId}
+            accent-color="#f59e0b"
+            autoplay="muted"
+            loop
+            class="w-full aspect-video"
+          />
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-8">
+          <div class="max-w-4xl mx-auto">
+            <span class="text-amber-400 text-sm font-semibold uppercase tracking-wider">Relocation Guide</span>
+            <h1 class="text-4xl md:text-5xl font-bold text-white mt-2 mb-4">{article?.title}</h1>
+          </div>
+        </div>
+      </header>
+
+      <!-- STORY MODE: Chapter Timeline -->
+      <div class="story-content bg-gray-900 py-4">
+        <div class="max-w-4xl mx-auto px-4">
+          <div class="flex items-center gap-2">
+            <span class="text-gray-500 text-xs uppercase tracking-wider mr-2">Chapters</span>
+            <div class="flex-1 flex items-center gap-1">
+              {actTimestamps.map((act, i) => (
+                <button onclick={`seekTo(${act.start})`} class="flex-1 group">
+                  <div class={`h-1 bg-${act.color}-500/60 rounded-full group-hover:bg-${act.color}-400`}></div>
+                  <span class="text-xs text-gray-400 mt-1 block truncate">{act.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        function seekTo(time) {
+          const player = document.querySelector('mux-player');
+          if (player) player.currentTime = time;
+        }
+      </script>
+
+      <!-- GUIDE MODE: Quick Facts Header -->
+      <div class="guide-content bg-amber-50 py-8">
+        <div class="max-w-4xl mx-auto px-4">
+          <h1 class="text-3xl font-bold text-gray-900 mb-6">Cyprus Digital Nomad Visa 2025</h1>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="key-stat">
+              <div class="value">€3,500</div>
+              <div class="label">Monthly Income Required</div>
+            </div>
+            <div class="key-stat">
+              <div class="value">92%</div>
+              <div class="label">Approval Rate</div>
+            </div>
+            <div class="key-stat">
+              <div class="value">4-6 wk</div>
+              <div class="label">Processing Time</div>
+            </div>
+            <div class="key-stat">
+              <div class="value">3 yrs</div>
+              <div class="label">Max Duration</div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm">
+            <h2 class="font-bold text-lg text-gray-900 mb-4">Requirements Checklist</h2>
+            <ul class="guide-checklist list-none p-0 m-0">
+              <li>Valid passport (18+ months remaining)</li>
+              <li>Proof of remote employment with non-Cyprus entity</li>
+              <li>Income verification: €3,500+/month (bank statements, contracts)</li>
+              <li>Health insurance valid in Cyprus</li>
+              <li>Clean criminal record certificate</li>
+              <li>Accommodation proof (rental or hotel booking)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <main class="max-w-4xl mx-auto px-4 py-12">
+        <!-- STORY MODE: Four-Act Sections with HLS Video -->
+        {fourActContent.slice(0, 4).map((section, i) => {
+          const act = actTimestamps[i];
+          return (
+            <section class="story-content video-section mb-16">
+              <div class="thumbnail-overlay rounded-xl mb-6">
+                <video
+                  id={`section-video-${i}`}
+                  class="w-full aspect-[21/9] object-cover rounded-xl"
+                  muted
+                  playsinline
+                  loop
+                  poster={getThumbnail(act.mid)}
+                  data-start={act.start}
+                  data-end={act.end}
+                  data-hls={hlsUrl}
+                ></video>
+                <div class="absolute inset-0 thumbnail-gradient rounded-xl pointer-events-none"></div>
+                <div class="absolute top-3 right-3">
+                  <span class="brand-badge text-white/80">Relocation Quest</span>
+                </div>
+                <div class="absolute bottom-4 left-4 right-4">
+                  <h2 class="text-xl md:text-2xl font-bold text-white drop-shadow-lg">{section.title || act.label}</h2>
+                  {section.factoid && (
+                    <p class="text-white/80 text-sm mt-1 drop-shadow">{section.factoid}</p>
+                  )}
+                </div>
+              </div>
+
+              <div class="prose prose-lg max-w-none">
+                <p class="text-gray-700 leading-relaxed">{section.content || 'Content for this section...'}</p>
+              </div>
+            </section>
+          );
+        })}
+
+        <!-- HLS Video Init Script (runs after all videos are in DOM) -->
+        <script is:inline>
+          document.addEventListener('DOMContentLoaded', function() {
+            if (typeof Hls === 'undefined' || !Hls.isSupported()) {
+              console.log('HLS not supported');
+              return;
+            }
+
+            const videos = document.querySelectorAll('[data-hls]');
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            videos.forEach(function(video) {
+              const hlsUrl = video.dataset.hls;
+              const start = parseFloat(video.dataset.start) || 0;
+              const end = parseFloat(video.dataset.end) || 3;
+              const autoplay = video.dataset.autoplay === 'true';
+
+              const hls = new Hls();
+              hls.loadSource(hlsUrl);
+              hls.attachMedia(video);
+
+              hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.currentTime = start;
+                // Auto-play immediately if data-autoplay="true"
+                if (autoplay && !prefersReducedMotion) {
+                  video.play().catch(function() {});
+                }
+              });
+
+              // Loop within chapter bounds
+              video.addEventListener('timeupdate', function() {
+                if (video.currentTime >= end) {
+                  video.currentTime = start;
+                }
+              });
+
+              // IntersectionObserver for play/pause on visibility (unless autoplay)
+              if (!prefersReducedMotion && !autoplay) {
+                const observer = new IntersectionObserver(function(entries) {
+                  entries.forEach(function(entry) {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+                      video.play().catch(function() {});
+                    } else {
+                      video.pause();
+                    }
+                  });
+                }, { threshold: 0.3 });
+                observer.observe(video);
+              }
+            });
+          });
+        </script>
+
+        <!-- GUIDE MODE: Structured Content -->
+        <div class="guide-content space-y-8">
+          <section class="bg-white rounded-xl p-6 shadow-sm border">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Application Process</h2>
+            <ol class="list-decimal list-inside space-y-3 text-gray-700">
+              <li><strong>Gather documents:</strong> Passport, employment proof, bank statements, health insurance</li>
+              <li><strong>Submit application:</strong> Online or at Cyprus Civil Registry</li>
+              <li><strong>Pay fee:</strong> ~€70 application fee</li>
+              <li><strong>Wait for processing:</strong> 4-6 weeks typical</li>
+              <li><strong>Receive visa:</strong> Valid for 1 year, renewable twice</li>
+            </ol>
+          </section>
+
+          <section class="bg-white rounded-xl p-6 shadow-sm border">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Cost of Living Comparison</h2>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-2">Expense</th>
+                  <th class="text-right py-2">Cyprus</th>
+                  <th class="text-right py-2">London</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b">
+                  <td class="py-2">2BR Apartment</td>
+                  <td class="text-right">€800-1,200</td>
+                  <td class="text-right">£1,800+</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-2">Meal Out</td>
+                  <td class="text-right">€12-20</td>
+                  <td class="text-right">£15-25</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-2">Coffee</td>
+                  <td class="text-right">€2.50</td>
+                  <td class="text-right">£3.50</td>
+                </tr>
+                <tr>
+                  <td class="py-2 font-semibold">Estimated Monthly</td>
+                  <td class="text-right font-semibold text-green-600">€1,500-2,000</td>
+                  <td class="text-right font-semibold text-red-600">£2,500-3,500</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          {faq.length > 0 && (
+            <section class="bg-white rounded-xl p-6 shadow-sm border">
+              <h2 class="text-xl font-bold text-gray-900 mb-4">FAQ</h2>
+              <div class="space-y-4">
+                {faq.map((item) => (
+                  <div class="border-b pb-4 last:border-b-0 last:pb-0">
+                    <h3 class="font-semibold text-gray-900">{item.q}</h3>
+                    <p class="text-gray-600 text-sm mt-1">{item.a}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <!-- GIF vs Video Comparison (always visible) -->
+        <section class="mt-16 bg-gray-50 rounded-xl p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Technical Comparison: Video vs GIF</h2>
+          <p class="text-gray-600 mb-6">Side-by-side of HLS video (working approach) vs Mux animated GIF endpoint.</p>
+
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-sm font-semibold text-green-700 mb-2">HLS Video (Recommended)</h3>
+              <div class="thumbnail-overlay rounded-xl bg-gray-900">
+                <video
+                  id="compare-video"
+                  class="w-full aspect-video object-cover rounded-xl"
+                  muted
+                  playsinline
+                  poster={getThumbnail(1.5)}
+                  data-start="0"
+                  data-end="3"
+                  data-hls={hlsUrl}
+                  data-autoplay="true"
+                ></video>
+              </div>
+              <ul class="mt-2 text-xs text-gray-600 space-y-1">
+                <li class="text-green-600">✓ ~100-400KB per segment</li>
+                <li class="text-green-600">✓ Full color, smooth playback</li>
+                <li class="text-green-600">✓ Respects prefers-reduced-motion</li>
+                <li class="text-green-600">✓ Play/pause on visibility</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 class="text-sm font-semibold text-red-700 mb-2">Animated GIF (Current)</h3>
+              <div class="rounded-xl overflow-hidden bg-gray-900">
+                <img
+                  src={getGifUrl(0, 3)}
+                  alt="GIF comparison"
+                  class="w-full aspect-video object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <ul class="mt-2 text-xs text-gray-600 space-y-1">
+                <li class="text-red-600">✗ Multi-MB file size</li>
+                <li class="text-red-600">✗ 256 color limit</li>
+                <li class="text-red-600">✗ Always animates (no control)</li>
+                <li class="text-red-600">✗ Ignores accessibility preferences</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+
+    </>
+  )}
+
+  {!playbackId && (
+    <div class="max-w-4xl mx-auto px-4 py-16">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+        <p class="text-red-800 font-medium">No Mux playback ID found for the Cyprus article.</p>
+        <p class="text-red-600 text-sm mt-2">Please ensure the article has a video_playback_id in the database.</p>
+      </div>
+    </div>
+  )}
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-8">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <p class="text-gray-400 text-sm">
+        Mux Video Test Page | HLS streaming with chapter loops | Guide/Story mode toggle
+      </p>
+      {playbackId && (
+        <p class="text-gray-500 text-xs mt-2">Playback ID: {playbackId}</p>
+      )}
+    </div>
+  </footer>
+</body>
+</html>

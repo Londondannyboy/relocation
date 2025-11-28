@@ -39,6 +39,11 @@ if (!slug) {
   return Astro.redirect('/');
 }
 
+// Skip file extensions - let Astro handle static files and API routes
+if (slug.includes('.')) {
+  return new Response(null, { status: 404 });
+}
+
 // Fetch the article with 4-act structured data
 const articleResult = await sql`
   SELECT

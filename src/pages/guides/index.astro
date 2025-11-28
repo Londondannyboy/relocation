@@ -1,0 +1,360 @@
+---
+/**
+ * Country Guides Index
+ * ====================
+ * Optimistic, warm design for relocation guides
+ */
+import { sql } from '../../lib/db';
+
+// Fetch all published countries
+const countriesResult = await sql`
+  SELECT
+    id, name, slug, code, flag_emoji, region, continent,
+    relocation_motivations, relocation_tags, facts
+  FROM countries
+  WHERE status = 'published'
+  ORDER BY name ASC
+`;
+
+const countries = countriesResult || [];
+
+// Group by region with custom ordering
+const regionOrder = ['Europe', 'Southeast Asia', 'Middle East', 'East Asia', 'Oceania', 'North America', 'Central America', 'South America', 'Other'];
+const regionGroups: Record<string, typeof countries> = {};
+for (const country of countries) {
+  const region = country.region || 'Other';
+  if (!regionGroups[region]) {
+    regionGroups[region] = [];
+  }
+  regionGroups[region].push(country);
+}
+
+// Sort regions by custom order
+const sortedRegions = Object.entries(regionGroups).sort(([a], [b]) => {
+  return regionOrder.indexOf(a) - regionOrder.indexOf(b);
+});
+
+// Motivation config with icons and colors
+const motivationConfig: Record<string, { label: string; icon: string; color: string }> = {
+  'corporate': { label: 'Corporate', icon: '💼', color: 'bg-blue-100 text-blue-700' },
+  'trust': { label: 'Trust', icon: '🛡️', color: 'bg-purple-100 text-purple-700' },
+  'wealth': { label: 'Wealth', icon: '💎', color: 'bg-emerald-100 text-emerald-700' },
+  'retirement': { label: 'Retirement', icon: '🌅', color: 'bg-orange-100 text-orange-700' },
+  'digital-nomad': { label: 'Digital Nomad', icon: '💻', color: 'bg-cyan-100 text-cyan-700' },
+  'lifestyle': { label: 'Lifestyle', icon: '🌴', color: 'bg-pink-100 text-pink-700' },
+  'new-start': { label: 'New Start', icon: '🚀', color: 'bg-amber-100 text-amber-700' },
+  'family': { label: 'Family', icon: '👨‍👩‍👧‍👦', color: 'bg-rose-100 text-rose-700' },
+};
+
+// Region icons
+const regionIcons: Record<string, string> = {
+  'Europe': '🏰',
+  'Southeast Asia': '🏝️',
+  'Middle East': '🕌',
+  'East Asia': '🗾',
+  'Oceania': '🦘',
+  'North America': '🗽',
+  'Central America': '🌺',
+  'South America': '🌎',
+  'Other': '🌍',
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Country Relocation Guides - Your New Chapter Starts Here | Relocation Quest</title>
+  <meta name="description" content="Comprehensive relocation guides for countries around the world. Find visa options, tax planning, cost of living, and everything you need for your new adventure.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hero-gradient {
+      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 25%, #FFB347 50%, #FF6B6B 75%, #C44569 100%);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+    }
+    .motivation-badge {
+      transition: all 0.2s ease;
+    }
+    .motivation-badge:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-amber-50 via-white to-orange-50 min-h-screen">
+  <!-- Navigation -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-amber-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold">
+          <span class="text-gray-900">Relocation</span><span class="text-amber-500">Quest</span>
+        </a>
+        <div class="flex items-center space-x-6">
+          <a href="/" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Home</a>
+          <a href="/guides" class="text-amber-600 font-semibold">Guides</a>
+          <a href="/articles" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Articles</a>
+          <a href="/companies" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Companies</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero - Warm & Optimistic -->
+  <div class="hero-gradient text-white py-20 relative overflow-hidden">
+    <!-- Decorative elements -->
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-10 text-8xl">✈️</div>
+      <div class="absolute top-20 right-20 text-6xl">🌍</div>
+      <div class="absolute bottom-10 left-1/4 text-7xl">🏖️</div>
+      <div class="absolute bottom-20 right-1/3 text-5xl">🌅</div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 relative z-10">
+      <div class="max-w-3xl">
+        <p class="text-amber-100 font-medium mb-2 text-lg">Your new chapter awaits</p>
+        <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+          Country Relocation Guides
+        </h1>
+        <p class="text-xl text-white/90 leading-relaxed mb-8">
+          Everything you need to know about relocating abroad — visa options, tax planning,
+          cost of living, and the inside scoop from people who've made the move.
+        </p>
+
+        <!-- Quick stats -->
+        <div class="flex flex-wrap gap-6">
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+            <span class="text-2xl font-bold">{countries.length}</span>
+            <span class="text-white/80 ml-2">Countries</span>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+            <span class="text-2xl font-bold">8</span>
+            <span class="text-white/80 ml-2">Relocation Types</span>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
+            <span class="text-2xl font-bold">{Object.keys(regionGroups).length}</span>
+            <span class="text-white/80 ml-2">Regions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motivation Filter Bar -->
+  <div class="bg-white border-b border-amber-100 py-4 sticky top-16 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-center gap-2 overflow-x-auto pb-2">
+        <span class="text-gray-500 font-medium text-sm whitespace-nowrap mr-2">Filter by motivation:</span>
+        {Object.entries(motivationConfig).map(([key, config]) => (
+          <button
+            class={`motivation-badge ${config.color} px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1.5 hover:shadow-md`}
+            data-motivation={key}
+          >
+            <span>{config.icon}</span>
+            <span>{config.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-12">
+    {countries.length === 0 ? (
+      <div class="text-center py-20">
+        <div class="text-6xl mb-4">🌍</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Guides Coming Soon</h2>
+        <p class="text-gray-600">We're preparing comprehensive guides for amazing destinations.</p>
+        <p class="text-gray-500 mt-2">Check back soon for your next adventure!</p>
+      </div>
+    ) : (
+      <div class="space-y-16">
+        {sortedRegions.map(([region, regionCountries]) => (
+          <section>
+            <div class="flex items-center gap-3 mb-8">
+              <span class="text-3xl">{regionIcons[region] || '🌍'}</span>
+              <h2 class="text-3xl font-bold text-gray-900">{region}</h2>
+              <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">
+                {regionCountries.length} {regionCountries.length === 1 ? 'country' : 'countries'}
+              </span>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {regionCountries.map((country) => {
+                const facts = typeof country.facts === 'string'
+                  ? JSON.parse(country.facts)
+                  : country.facts || {};
+                const motivations = country.relocation_motivations || [];
+
+                return (
+                  <a
+                    href={`/guides/${country.slug}`}
+                    class="card-hover bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 group"
+                  >
+                    <!-- Card Header with Flag -->
+                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 border-b border-amber-100">
+                      <div class="flex items-center gap-4">
+                        <span class="text-5xl drop-shadow-sm">{country.flag_emoji || '🌍'}</span>
+                        <div>
+                          <h3 class="font-bold text-gray-900 text-xl group-hover:text-amber-600 transition-colors">
+                            {country.name}
+                          </h3>
+                          <p class="text-gray-500">{country.region}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="p-6">
+                      <!-- Motivations -->
+                      {motivations.length > 0 && (
+                        <div class="flex flex-wrap gap-2 mb-5">
+                          {motivations.slice(0, 4).map((mot: string) => {
+                            const config = motivationConfig[mot] || { label: mot, icon: '📍', color: 'bg-gray-100 text-gray-600' };
+                            return (
+                              <span class={`${config.color} px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1`}>
+                                <span>{config.icon}</span>
+                                <span>{config.label}</span>
+                              </span>
+                            );
+                          })}
+                          {motivations.length > 4 && (
+                            <span class="text-gray-400 text-xs self-center">
+                              +{motivations.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <!-- Quick Facts -->
+                      <div class="space-y-3 text-sm">
+                        {facts.corporate_tax_rate && (
+                          <div class="flex justify-between items-center">
+                            <span class="text-gray-500 flex items-center gap-2">
+                              <span class="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-xs">💼</span>
+                              Corporate Tax
+                            </span>
+                            <span class="text-gray-900 font-semibold">{facts.corporate_tax_rate}</span>
+                          </div>
+                        )}
+                        {facts.dn_visa_cost && (
+                          <div class="flex justify-between items-center">
+                            <span class="text-gray-500 flex items-center gap-2">
+                              <span class="w-5 h-5 bg-cyan-100 rounded flex items-center justify-center text-xs">💻</span>
+                              DN Visa Cost
+                            </span>
+                            <span class="text-gray-900 font-semibold">{facts.dn_visa_cost}</span>
+                          </div>
+                        )}
+                        {facts.cost_of_living_single && (
+                          <div class="flex justify-between items-center">
+                            <span class="text-gray-500 flex items-center gap-2">
+                              <span class="w-5 h-5 bg-green-100 rounded flex items-center justify-center text-xs">🏠</span>
+                              Cost of Living
+                            </span>
+                            <span class="text-gray-900 font-semibold">{facts.cost_of_living_single}</span>
+                          </div>
+                        )}
+                        {facts.climate && (
+                          <div class="flex justify-between items-center">
+                            <span class="text-gray-500 flex items-center gap-2">
+                              <span class="w-5 h-5 bg-amber-100 rounded flex items-center justify-center text-xs">☀️</span>
+                              Climate
+                            </span>
+                            <span class="text-gray-900 font-semibold truncate max-w-[150px]">{facts.climate}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <!-- CTA -->
+                      <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <span class="text-amber-600 font-semibold group-hover:text-amber-700 transition-colors">
+                          Explore Guide
+                        </span>
+                        <span class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 group-hover:bg-amber-200 transition-colors">
+                          →
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    )}
+  </main>
+
+  <!-- CTA Section -->
+  <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-16 mt-16">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+        Ready to Start Your Journey?
+      </h2>
+      <p class="text-xl text-white/90 mb-8">
+        Join thousands who've successfully relocated to their dream destination.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/articles" class="bg-white text-amber-600 px-8 py-3 rounded-full font-semibold hover:bg-amber-50 transition-colors shadow-lg">
+          Read Success Stories
+        </a>
+        <a href="/companies" class="bg-transparent text-white border-2 border-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-colors">
+          Find Relocation Services
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <h3 class="font-bold text-xl mb-4">
+            Relocation<span class="text-amber-500">Quest</span>
+          </h3>
+          <p class="text-gray-400 text-sm">
+            Your trusted guide for international relocation. Making your move easier, one country at a time.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Popular Guides</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/guides/cyprus" class="hover:text-amber-400 transition-colors">🇨🇾 Cyprus</a></li>
+            <li><a href="/guides/portugal" class="hover:text-amber-400 transition-colors">🇵🇹 Portugal</a></li>
+            <li><a href="/guides/thailand" class="hover:text-amber-400 transition-colors">🇹🇭 Thailand</a></li>
+            <li><a href="/guides/united-arab-emirates" class="hover:text-amber-400 transition-colors">🇦🇪 UAE</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">By Motivation</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/guides?motivation=digital-nomad" class="hover:text-amber-400 transition-colors">💻 Digital Nomad</a></li>
+            <li><a href="/guides?motivation=corporate" class="hover:text-amber-400 transition-colors">💼 Corporate</a></li>
+            <li><a href="/guides?motivation=retirement" class="hover:text-amber-400 transition-colors">🌅 Retirement</a></li>
+            <li><a href="/guides?motivation=wealth" class="hover:text-amber-400 transition-colors">💎 Wealth</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/articles" class="hover:text-amber-400 transition-colors">All Articles</a></li>
+            <li><a href="/companies" class="hover:text-amber-400 transition-colors">Service Directory</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 pt-8 text-center">
+        <p class="text-gray-500 text-sm">
+          © 2024 Relocation Quest. All rights reserved. Your journey starts here.
+        </p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

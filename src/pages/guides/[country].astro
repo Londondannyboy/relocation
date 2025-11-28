@@ -1,0 +1,677 @@
+---
+/**
+ * Country Guide Template
+ * ======================
+ * Now with YOLO video, Summary, and Story sections like articles
+ */
+import { sql } from '../../lib/db';
+
+const { country } = Astro.params;
+
+if (!country) {
+  return Astro.redirect('/guides');
+}
+
+// Fetch country data
+const countryResult = await sql`
+  SELECT
+    id, name, slug, code, flag_emoji, region, continent, capital,
+    language, currency_code, relocation_motivations, relocation_tags, facts,
+    visa_types, tax_overview, seo_keywords
+  FROM countries
+  WHERE slug = ${country}
+    AND status = 'published'
+  LIMIT 1
+`;
+
+const countryData = countryResult[0];
+
+if (!countryData) {
+  return Astro.redirect('/guides');
+}
+
+// Fetch the country guide article
+const guideResult = await sql`
+  SELECT
+    id, title, content, meta_description as excerpt, slug,
+    published_at, video_playback_id, video_narrative, payload
+  FROM articles
+  WHERE country_code = ${countryData.code}
+    AND guide_type = 'country_comprehensive'
+    AND app = 'relocation'
+  LIMIT 1
+`;
+
+const guide = guideResult[0];
+
+// Parse guide payload
+let guidePayload: any = {};
+if (guide?.payload) {
+  try {
+    guidePayload = typeof guide.payload === 'string'
+      ? JSON.parse(guide.payload)
+      : guide.payload;
+  } catch (e) {
+    console.error('Failed to parse guide payload:', e);
+  }
+}
+
+// Parse video narrative
+let videoData: any = null;
+try {
+  videoData = typeof guide?.video_narrative === 'string'
+    ? JSON.parse(guide.video_narrative)
+    : guide?.video_narrative;
+} catch (e) {
+  console.error('Failed to parse video_narrative:', e);
+}
+
+// Parse country facts
+let facts: Record<string, string> = {};
+if (countryData.facts) {
+  try {
+    facts = typeof countryData.facts === 'string'
+      ? JSON.parse(countryData.facts)
+      : countryData.facts;
+  } catch (e) {
+    console.error('Failed to parse country facts:', e);
+  }
+}
+
+// Get playback ID
+const playbackId = videoData?.playback_id || guide?.video_playback_id;
+
+// Four act content for video chapters
+const fourActContent = guidePayload.four_act_content || [];
+
+// Act timestamps
+const actTimestamps = [
+  { start: 0, end: 3, mid: 1.5, label: 'Act 1' },
+  { start: 3, end: 6, mid: 4.5, label: 'Act 2' },
+  { start: 6, end: 9, mid: 7.5, label: 'Act 3' },
+  { start: 9, end: 12, mid: 10.5, label: 'Act 4' }
+];
+
+// Mux helpers
+function getMuxThumbnail(time: number, width: number = 800) {
+  if (!playbackId) return '';
+  return `https://image.mux.com/${playbackId}/thumbnail.jpg?time=${time}&width=${width}`;
+}
+
+function getMuxStream() {
+  if (!playbackId) return '';
+  return `https://stream.mux.com/${playbackId}.m3u8`;
+}
+
+// Motivation config
+const motivationConfig: Record<string, { label: string; icon: string; color: string }> = {
+  'corporate': { label: 'Corporate Relocation', icon: '💼', color: 'blue' },
+  'trust': { label: 'Trust & Asset Protection', icon: '🛡️', color: 'purple' },
+  'wealth': { label: 'Wealth Management', icon: '💎', color: 'emerald' },
+  'retirement': { label: 'Retirement', icon: '🌅', color: 'orange' },
+  'digital-nomad': { label: 'Digital Nomad', icon: '💻', color: 'cyan' },
+  'lifestyle': { label: 'Lifestyle Change', icon: '🌴', color: 'pink' },
+  'new-start': { label: 'Fresh Start', icon: '🚀', color: 'amber' },
+  'family': { label: 'Family Relocation', icon: '👨‍👩‍👧‍👦', color: 'rose' },
+};
+
+const motivations = countryData.relocation_motivations || [];
+
+// Quick stats
+const quickStats = [
+  { label: 'Corporate Tax', value: facts.corporate_tax_rate, icon: '💼' },
+  { label: 'DN Visa Cost', value: facts.dn_visa_cost, icon: '💻' },
+  { label: 'Cost of Living', value: facts.cost_of_living_single, icon: '🏠' },
+  { label: 'Climate', value: facts.climate, icon: '☀️' },
+].filter(s => s.value && s.value !== 'N/A');
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{countryData.name} Relocation Guide 2025 - Relocation Quest</title>
+  <meta name="description" content={guide?.excerpt || `Complete ${countryData.name} relocation guide. Visa options, tax planning, cost of living, and more.`}>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://unpkg.com/@mux/mux-player"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hero-gradient {
+      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 25%, #FFB347 50%, #FF6B6B 75%, #C44569 100%);
+    }
+    .motivation-card { transition: all 0.3s ease; }
+    .motivation-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15); }
+    .chapter-marker { cursor: pointer; transition: all 0.2s ease; }
+    .chapter-marker:hover { transform: scale(1.05); }
+    .thumbnail-overlay { position: relative; overflow: hidden; }
+    .thumbnail-gradient { background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-amber-50 via-white to-orange-50">
+  <!-- Navigation -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-amber-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold">
+          <span class="text-gray-900">Relocation</span><span class="text-amber-500">Quest</span>
+        </a>
+        <div class="flex items-center space-x-6">
+          <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
+          <a href="/guides" class="text-amber-600 font-semibold">Guides</a>
+          <a href="/articles" class="text-gray-600 hover:text-gray-900 font-medium">Articles</a>
+          <a href="/companies" class="text-gray-600 hover:text-gray-900 font-medium">Companies</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== YOLO HERO SECTION ===== -->
+  {playbackId ? (
+    <header class="relative bg-gray-900">
+      <div class="max-w-6xl mx-auto">
+        <mux-player
+          playback-id={playbackId}
+          accent-color="#f59e0b"
+          autoplay="muted"
+          loop
+          class="w-full aspect-video"
+        />
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-8">
+        <div class="max-w-4xl mx-auto">
+          <!-- Breadcrumb -->
+          <div class="flex items-center space-x-2 text-gray-400 text-sm mb-4">
+            <a href="/" class="hover:text-white">Home</a>
+            <span>›</span>
+            <a href="/guides" class="hover:text-white">Guides</a>
+            <span>›</span>
+            <span class="text-white">{countryData.name}</span>
+          </div>
+          <div class="flex items-center gap-4 mb-4">
+            <span class="text-6xl">{countryData.flag_emoji || '🌍'}</span>
+            <div>
+              <h1 class="text-4xl md:text-5xl font-bold text-white">{countryData.name} Relocation Guide</h1>
+              <p class="text-xl text-gray-300 mt-2">{countryData.region} • {countryData.capital} • {countryData.currency_code}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  ) : (
+    <!-- Fallback Hero (no video) -->
+    <header class="hero-gradient text-white py-16">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center space-x-2 text-white/70 text-sm mb-6">
+          <a href="/" class="hover:text-white">Home</a>
+          <span>›</span>
+          <a href="/guides" class="hover:text-white">Guides</a>
+          <span>›</span>
+          <span class="text-white">{countryData.name}</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <span class="text-7xl">{countryData.flag_emoji || '🌍'}</span>
+          <div>
+            <h1 class="text-4xl md:text-5xl font-bold">{countryData.name} Relocation Guide</h1>
+            <p class="text-xl text-white/80 mt-2">{countryData.region} • {countryData.capital} • {countryData.currency_code}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+  )}
+
+  <!-- ===== CHAPTER TIMELINE (4-Act Progress Bar) ===== -->
+  {playbackId && fourActContent.length >= 4 && (
+    <div class="bg-gray-900 py-4">
+      <div class="max-w-4xl mx-auto px-4">
+        <div class="flex items-center gap-2">
+          <span class="text-gray-500 text-xs uppercase tracking-wider mr-2">Story</span>
+          <div class="flex-1 flex items-center gap-1">
+            {fourActContent.slice(0, 4).map((section, i) => {
+              const colors = ['bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-emerald-500'];
+              const actTitles = ['The Draw', 'The Opportunity', 'The Journey', 'The New Life'];
+              const title = section.title?.split(':')[0]?.substring(0, 20) || actTitles[i];
+              return (
+                <button onclick={`seekTo(${i * 3})`} class="chapter-marker flex-1 group">
+                  <div class={`h-1.5 ${colors[i]} rounded-full opacity-60 group-hover:opacity-100`}></div>
+                  <span class="text-xs text-gray-400 mt-1 block truncate">{title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <script>
+    function seekTo(time) {
+      const player = document.querySelector('mux-player');
+      if (player) player.currentTime = time;
+    }
+  </script>
+
+  <!-- ===== SUMMARY SECTION ===== -->
+  {guidePayload.overview && (
+    <section class="bg-white border-b border-amber-100">
+      <div class="max-w-4xl mx-auto px-4 py-12">
+        <div class="text-center mb-8">
+          <span class="text-amber-600 text-sm font-semibold uppercase tracking-wider">Why {countryData.name}?</span>
+          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mt-2">
+            {guidePayload.overview.headline || `Your New Life in ${countryData.name}`}
+          </h2>
+        </div>
+        <p class="text-xl text-gray-600 leading-relaxed text-center max-w-3xl mx-auto">
+          {guidePayload.overview.intro || guide?.excerpt}
+        </p>
+        {guidePayload.overview.quick_stats && guidePayload.overview.quick_stats.length > 0 && (
+          <div class="flex flex-wrap justify-center gap-3 mt-8">
+            {guidePayload.overview.quick_stats.map((stat: string) => (
+              <span class="bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-medium">
+                ✓ {stat}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <!-- ===== STORY SECTION (4-Act Video Ticker Tape) ===== -->
+  {playbackId && fourActContent.length >= 4 && (
+    <section class="bg-gray-900 py-12">
+      <div class="max-w-5xl mx-auto px-4">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-6 text-center">
+          The {countryData.name} Story
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {fourActContent.slice(0, 4).map((section, i) => {
+            const actTime = actTimestamps[i];
+            const actTitles = ['The Draw', 'The Opportunity', 'The Journey', 'The New Life'];
+            const actTitle = section.title || actTitles[i];
+            return (
+              <button onclick={`seekTo(${actTime.start})`} class="bg-gray-800 rounded-xl overflow-hidden text-left hover:bg-gray-700 transition group">
+                <video
+                  class="story-video w-full aspect-video object-cover"
+                  muted
+                  playsinline
+                  loop
+                  poster={getMuxThumbnail(actTime.mid, 480)}
+                  data-hls={getMuxStream()}
+                  data-start={actTime.start}
+                  data-end={actTime.end}
+                ></video>
+                <div class="p-4">
+                  <h4 class="font-semibold text-white text-sm">{actTitle}</h4>
+                  <p class="text-xs text-gray-400 mt-1 line-clamp-2">{section.factoid || ''}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Quick Facts Bar -->
+  {quickStats.length > 0 && (
+    <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-6">
+      <div class="max-w-5xl mx-auto px-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {quickStats.map((stat) => (
+            <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+              <span class="text-2xl">{stat.icon}</span>
+              <div class="text-white/80 text-sm mt-1">{stat.label}</div>
+              <div class="text-white font-bold text-lg">{stat.value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Motivation Navigation (Sticky) -->
+  <div class="bg-white border-b border-gray-200 shadow-sm sticky top-16 z-40">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex overflow-x-auto py-4 gap-3 scrollbar-hide">
+        {motivations.map((mot: string) => {
+          const config = motivationConfig[mot] || { label: mot, icon: '📍', color: 'gray' };
+          return (
+            <a
+              href={`#${mot}`}
+              class={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full bg-${config.color}-100 text-${config.color}-700 hover:bg-${config.color}-200 transition-colors font-medium`}
+            >
+              <span>{config.icon}</span>
+              <span class="whitespace-nowrap">{config.label}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-12">
+    <!-- Motivation Sections -->
+    {motivations.map((mot: string, index: number) => {
+      const config = motivationConfig[mot] || { label: mot, icon: '📍', color: 'gray' };
+      const motData = guidePayload.motivations?.find((m: any) => m.id === mot);
+      const actTime = actTimestamps[index % 4];
+
+      return (
+        <section id={mot} class="mb-16 scroll-mt-32">
+          <!-- Section Header with Video Background -->
+          {playbackId && (
+            <div class="thumbnail-overlay rounded-2xl mb-8">
+              <video
+                class="section-video w-full aspect-[21/9] object-cover rounded-2xl"
+                muted
+                playsinline
+                loop
+                poster={getMuxThumbnail(actTime.mid, 800)}
+                data-hls={getMuxStream()}
+                data-start={actTime.start}
+                data-end={actTime.end}
+              ></video>
+              <div class="absolute inset-0 thumbnail-gradient rounded-2xl"></div>
+              <div class="absolute bottom-6 left-6 right-6">
+                <div class="flex items-center gap-4">
+                  <div class={`w-14 h-14 rounded-xl bg-${config.color}-500 flex items-center justify-center text-3xl shadow-lg`}>
+                    {config.icon}
+                  </div>
+                  <div>
+                    <h2 class="text-3xl font-bold text-white drop-shadow-lg">{config.label}</h2>
+                    {motData?.summary && (
+                      <p class="text-white/80 mt-1 drop-shadow">{motData.summary}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!playbackId && (
+            <div class="flex items-center gap-4 mb-8">
+              <div class={`w-16 h-16 rounded-2xl bg-${config.color}-100 flex items-center justify-center text-3xl`}>
+                {config.icon}
+              </div>
+              <div>
+                <h2 class="text-3xl font-bold text-gray-900">{config.label}</h2>
+                {motData?.summary && <p class="text-gray-600 mt-1">{motData.summary}</p>}
+              </div>
+            </div>
+          )}
+
+          <!-- Content Cards -->
+          <div class="grid md:grid-cols-3 gap-6">
+            <!-- Visa Card -->
+            <div class="motivation-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🛂</span>
+                <h3 class="font-bold text-gray-900">Visa & Immigration</h3>
+              </div>
+              {mot === 'digital-nomad' && facts.dn_visa_duration && (
+                <div class="space-y-3">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Duration</span>
+                    <span class="font-semibold text-gray-900">{facts.dn_visa_duration}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Cost</span>
+                    <span class="font-semibold text-gray-900">{facts.dn_visa_cost}</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Income Required</span>
+                    <span class="font-semibold text-gray-900">{facts.dn_visa_income_requirement}</span>
+                  </div>
+                </div>
+              )}
+              {countryData.visa_types && (
+                <p class="text-gray-600 text-sm mt-4">{countryData.visa_types}</p>
+              )}
+            </div>
+
+            <!-- Tax Card -->
+            <div class="motivation-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">💵</span>
+                <h3 class="font-bold text-gray-900">Tax Planning</h3>
+              </div>
+              <div class="space-y-3">
+                {facts.income_tax_rate && (
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Income Tax</span>
+                    <span class="font-semibold text-gray-900">{facts.income_tax_rate}</span>
+                  </div>
+                )}
+                {facts.corporate_tax_rate && (
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Corporate Tax</span>
+                    <span class="font-semibold text-gray-900">{facts.corporate_tax_rate}</span>
+                  </div>
+                )}
+              </div>
+              {countryData.tax_overview && (
+                <p class="text-gray-600 text-sm mt-4">{countryData.tax_overview}</p>
+              )}
+            </div>
+
+            <!-- Cost of Living Card -->
+            <div class="motivation-card bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div class="flex items-center gap-3 mb-4">
+                <span class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-xl">🏠</span>
+                <h3 class="font-bold text-gray-900">Cost of Living</h3>
+              </div>
+              <div class="space-y-3">
+                {facts.cost_of_living_single && (
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Single Person</span>
+                    <span class="font-semibold text-gray-900">{facts.cost_of_living_single}</span>
+                  </div>
+                )}
+                {facts.healthcare_quality && (
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">Healthcare</span>
+                    <span class="font-semibold text-gray-900">{facts.healthcare_quality}</span>
+                  </div>
+                )}
+                {facts.english_proficiency && (
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-500">English Level</span>
+                    <span class="font-semibold text-gray-900">{facts.english_proficiency}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <!-- Planning Sections Detail (if available) -->
+          {motData?.planning_sections && Object.keys(motData.planning_sections).length > 0 && (
+            <div class="mt-8 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-8">
+              <div class="grid md:grid-cols-2 gap-8">
+                {Object.entries(motData.planning_sections).map(([key, section]: [string, any]) => (
+                  <div>
+                    <h4 class="font-bold text-gray-900 mb-3">{section.title}</h4>
+                    <p class="text-gray-600 text-sm mb-4">{section.content}</p>
+                    {section.key_facts && section.key_facts.length > 0 && (
+                      <ul class="space-y-2">
+                        {section.key_facts.map((fact: string) => (
+                          <li class="text-sm text-gray-700 flex items-start gap-2">
+                            <span class="text-green-500 mt-0.5">✓</span>
+                            <span>{fact}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      );
+    })}
+
+    <!-- FAQ Section -->
+    {guidePayload.faq && guidePayload.faq.length > 0 && (
+      <section class="mt-16">
+        <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
+        <div class="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          {guidePayload.faq.map((item: any) => (
+            <details class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 group">
+              <summary class="flex justify-between items-center cursor-pointer list-none">
+                <span class="font-semibold text-gray-900 pr-4">{item.q}</span>
+                <span class="text-amber-500 group-open:rotate-180 transition-transform text-xl">▼</span>
+              </summary>
+              <p class="mt-4 text-gray-600">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Sources -->
+    {guidePayload.sources && guidePayload.sources.length > 0 && (
+      <section class="mt-16 pt-8 border-t border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-700 mb-6">Sources & References</h3>
+        <div class="grid md:grid-cols-3 gap-4">
+          {guidePayload.sources.map((source: any) => (
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener"
+              class="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 hover:border-amber-200 hover:shadow-sm transition"
+            >
+              <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">🔗</div>
+              <div>
+                <p class="font-medium text-gray-900 text-sm">{source.name}</p>
+                {source.description && <p class="text-xs text-gray-500">{source.description}</p>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </main>
+
+  <!-- CTA Section -->
+  <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-16">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+        Ready to Make {countryData.name} Home?
+      </h2>
+      <p class="text-xl text-white/90 mb-8">
+        Get expert help with your relocation journey.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="/companies" class="bg-white text-amber-600 px-8 py-3 rounded-full font-semibold hover:bg-amber-50 transition-colors shadow-lg">
+          Find Relocation Services
+        </a>
+        <a href="/guides" class="bg-transparent text-white border-2 border-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-colors">
+          Explore More Countries
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="grid md:grid-cols-4 gap-8 mb-12">
+        <div>
+          <h3 class="font-bold text-xl mb-4">
+            Relocation<span class="text-amber-500">Quest</span>
+          </h3>
+          <p class="text-gray-400 text-sm">
+            Comprehensive guides for relocating abroad. Making your move easier.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Popular Guides</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/guides/cyprus" class="hover:text-amber-400">🇨🇾 Cyprus</a></li>
+            <li><a href="/guides/portugal" class="hover:text-amber-400">🇵🇹 Portugal</a></li>
+            <li><a href="/guides/thailand" class="hover:text-amber-400">🇹🇭 Thailand</a></li>
+            <li><a href="/guides/united-arab-emirates" class="hover:text-amber-400">🇦🇪 UAE</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">By Motivation</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/guides?motivation=digital-nomad" class="hover:text-amber-400">💻 Digital Nomad</a></li>
+            <li><a href="/guides?motivation=corporate" class="hover:text-amber-400">💼 Corporate</a></li>
+            <li><a href="/guides?motivation=retirement" class="hover:text-amber-400">🌅 Retirement</a></li>
+            <li><a href="/guides?motivation=wealth" class="hover:text-amber-400">💎 Wealth</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Resources</h4>
+          <ul class="space-y-2 text-gray-400 text-sm">
+            <li><a href="/articles" class="hover:text-amber-400">All Articles</a></li>
+            <li><a href="/companies" class="hover:text-amber-400">Service Directory</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 pt-8 text-center">
+        <p class="text-gray-500 text-sm">
+          © 2024 Relocation Quest. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- HLS Video Init Script -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Hls === 'undefined' || !Hls.isSupported()) {
+        console.log('HLS not supported');
+        return;
+      }
+
+      const videos = document.querySelectorAll('[data-hls]');
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      videos.forEach(function(video) {
+        const hlsUrl = video.dataset.hls;
+        const start = parseFloat(video.dataset.start) || 0;
+        const end = parseFloat(video.dataset.end) || 3;
+
+        if (!hlsUrl) return;
+
+        const hls = new Hls();
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.currentTime = start;
+        });
+
+        // Loop within chapter bounds
+        video.addEventListener('timeupdate', function() {
+          if (video.currentTime >= end) {
+            video.currentTime = start;
+          }
+        });
+
+        // Play on visibility
+        if (!prefersReducedMotion) {
+          const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+                video.play().catch(function() {});
+              } else {
+                video.pause();
+              }
+            });
+          }, { threshold: 0.3 });
+          observer.observe(video);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
