@@ -1723,18 +1723,33 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     // Initialize content mode on page load
     document.addEventListener('DOMContentLoaded', function() {
+      // Debug: Log all content-mode containers
+      const allModes = document.querySelectorAll('.content-mode');
+      console.log('[DEBUG] Content mode containers found:', allModes.length);
+      allModes.forEach((el, i) => {
+        console.log(`  [${i}] ${el.id}: ${el.innerHTML.length} chars, display: ${el.style.display}`);
+      });
+
       // Check if content modes exist (content-story container present)
       const hasContentModes = document.getElementById('content-story');
+      console.log('[DEBUG] content-story exists:', !!hasContentModes);
+
       if (hasContentModes) {
+        console.log('[DEBUG] content-story innerHTML length:', hasContentModes.innerHTML.length);
+        console.log('[DEBUG] content-story first 200 chars:', hasContentModes.innerHTML.substring(0, 200));
+
         try {
           const savedMode = localStorage.getItem('rq_content_mode');
           if (savedMode && document.getElementById('content-' + savedMode)) {
+            console.log('[DEBUG] Switching to saved mode:', savedMode);
             switchMode(savedMode);
           } else {
             // Default to story mode
+            console.log('[DEBUG] Switching to default story mode');
             switchMode('story');
           }
         } catch (e) {
+          console.log('[DEBUG] Error, falling back to story:', e);
           switchMode('story');
         }
       }
