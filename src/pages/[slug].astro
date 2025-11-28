@@ -745,6 +745,17 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     }
   </script>
 
+  <!-- DEBUG: Content Mode Data -->
+  {hasContentModes && (
+    <div class="bg-yellow-100 border border-yellow-400 p-2 text-xs font-mono">
+      <strong>DEBUG:</strong>
+      story={contentModes.story?.length || 0} chars |
+      guide={contentModes.guide?.length || 0} chars |
+      yolo={contentModes.yolo?.length || 0} chars |
+      voices={voices.length}
+    </div>
+  )}
+
   <!-- Content Mode Toggle (Story/Guide/YOLO) for Country Guides -->
   {hasContentModes && (
     <div class="bg-gray-50 border-b border-gray-200 sticky top-0 z-40">
@@ -1647,6 +1658,14 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     // Switch content mode
     function switchMode(mode) {
       console.log('Switching to mode:', mode);
+
+      // DEBUG: Check what containers exist
+      const containers = document.querySelectorAll('.content-mode');
+      console.log('Content mode containers found:', containers.length);
+      containers.forEach(c => console.log('  -', c.id, 'innerHTML length:', c.innerHTML.length));
+
+      const targetContainer = document.getElementById('content-' + mode);
+      console.log('Target container:', 'content-' + mode, 'exists:', !!targetContainer);
 
       // Update button styles
       document.querySelectorAll('.mode-btn').forEach(btn => {
