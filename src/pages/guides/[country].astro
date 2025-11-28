@@ -85,7 +85,8 @@ const playbackId = videoData?.playback_id || guide?.video_playback_id;
 // Helper to strip script tags from content (JSON-LD etc. breaks set:html)
 function stripScriptTags(html: string): string {
   if (!html) return '';
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Simpler regex that handles multiline script content
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 }
 
 // Content modes for Story/Guide/YOLO/Voices

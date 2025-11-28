@@ -177,7 +177,8 @@ const contentSections = splitContentBySections(article.content || '');
 // Helper to strip script tags from content (JSON-LD etc. breaks set:html)
 function stripScriptTags(html: string): string {
   if (!html) return '';
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Simpler regex that handles multiline script content
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 }
 
 // Content modes for country guides (Story/Guide/YOLO)
@@ -187,6 +188,9 @@ const contentModes = {
   guide: stripScriptTags(article.content_guide || ''),
   yolo: stripScriptTags(article.content_yolo || '')
 };
+
+// Debug: Log content mode lengths at build time
+console.log(`[BUILD] Article: ${slug} | Story: ${contentModes.story.length} | Guide: ${contentModes.guide.length} | YOLO: ${contentModes.yolo.length}`);
 
 // Parse voices for testimonials
 let voices: any[] = [];
