@@ -219,6 +219,9 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://unpkg.com/@mux/mux-player"></script>
   <style>
+    /* Fallback for Tailwind hidden class */
+    .hidden { display: none !important; }
+
     /* Premium Typography */
     body {
       font-family: 'Inter', system-ui, sans-serif;
@@ -744,6 +747,16 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       if (player) player.currentTime = time;
     }
   </script>
+
+  <!-- DEBUG: Check if containers exist -->
+  <div id="debug-info" class="bg-red-100 border border-red-400 p-2 text-xs font-mono">
+    <strong>DEBUG v2:</strong>
+    hasContentModes={hasContentModes ? 'true' : 'false'} |
+    story={contentModes.story?.length || 0} |
+    guide={contentModes.guide?.length || 0} |
+    yolo={contentModes.yolo?.length || 0} |
+    voices={voices.length}
+  </div>
 
   <!-- Content Mode Toggle (Story/Guide/YOLO) for Country Guides -->
   {hasContentModes && (
@@ -1679,13 +1692,18 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       // Hide default page elements when content modes are active
       defaultElements.forEach(el => el.style.display = 'none');
 
-      // Hide all mode containers first
-      document.querySelectorAll('.content-mode').forEach(el => el.classList.add('hidden'));
+      // Hide all mode containers first (using inline style for reliability)
+      document.querySelectorAll('.content-mode').forEach(el => {
+        el.style.display = 'none';
+      });
 
       // Show the selected mode container (story, guide, yolo, or voices)
       const targetContainer = document.getElementById('content-' + mode);
       if (targetContainer) {
-        targetContainer.classList.remove('hidden');
+        targetContainer.style.display = 'block';
+        console.log('Showing container:', 'content-' + mode, 'Content length:', targetContainer.innerHTML.length);
+      } else {
+        console.log('Container not found:', 'content-' + mode);
       }
 
       // Save preference
