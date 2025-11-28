@@ -13,8 +13,7 @@ export default defineConfig({
   }),
   integrations: [tailwind(), react()],
   redirects: {
-    '/relocation/guide/latvia-startup-visa-complete-guide-2025': '/latvia-startup-visa-complete-guide-2025',
-    '/sitemap.xml': '/api/sitemap.xml'
+    '/relocation/guide/latvia-startup-visa-complete-guide-2025': '/latvia-startup-visa-complete-guide-2025'
   },
   server: {
     host: true // Listen on all network interfaces (0.0.0.0)
