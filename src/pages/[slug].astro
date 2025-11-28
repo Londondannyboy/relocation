@@ -35,6 +35,11 @@ import { sql } from '../lib/db';
 
 const { slug } = Astro.params;
 
+// Prevent CDN caching - always fetch fresh from Neon
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+Astro.response.headers.set('Pragma', 'no-cache');
+Astro.response.headers.set('Expires', '0');
+
 if (!slug) {
   return Astro.redirect('/');
 }
