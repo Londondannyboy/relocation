@@ -82,12 +82,18 @@ if (countryData.facts) {
 // Get playback ID
 const playbackId = videoData?.playback_id || guide?.video_playback_id;
 
+// Helper to strip script tags from content (JSON-LD etc. breaks set:html)
+function stripScriptTags(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+}
+
 // Content modes for Story/Guide/YOLO/Voices
 const hasContentModes = !!(guide?.content_story || guide?.content_guide || guide?.content_yolo);
 const contentModes = {
-  story: guide?.content_story || guide?.content || '',
-  guide: guide?.content_guide || '',
-  yolo: guide?.content_yolo || ''
+  story: stripScriptTags(guide?.content_story || guide?.content || ''),
+  guide: stripScriptTags(guide?.content_guide || ''),
+  yolo: stripScriptTags(guide?.content_yolo || '')
 };
 
 // Parse voices
@@ -373,6 +379,56 @@ const quickStats = [
     </div>
   </div>
 
+  <!-- Content Mode Toggle (Story/Guide/YOLO/Voices) -->
+  {hasContentModes && (
+    <div class="bg-gray-50 border-b border-gray-200 sticky top-0 z-40">
+      <div class="max-w-4xl mx-auto px-4 py-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reading Mode</span>
+          <div class="flex gap-1 bg-gray-200 rounded-lg p-1" id="content-mode-toggle">
+            <button
+              data-mode="story"
+              class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all bg-white text-gray-900 shadow-sm"
+              onclick="switchMode('story')"
+            >
+              Story
+            </button>
+            {contentModes.guide && (
+              <button
+                data-mode="guide"
+                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                onclick="switchMode('guide')"
+              >
+                Guide
+              </button>
+            )}
+            {contentModes.yolo && (
+              <button
+                data-mode="yolo"
+                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                onclick="switchMode('yolo')"
+              >
+                YOLO
+              </button>
+            )}
+            {voices.length > 0 && (
+              <button
+                data-mode="voices"
+                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                onclick="switchMode('voices')"
+              >
+                Voices ({voices.length})
+              </button>
+            )}
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1" id="mode-description">
+          Narrative journey through relocation
+        </p>
+      </div>
+    </div>
+  )}
+
   <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-4 py-12">
     <!-- Motivation Sections -->
@@ -575,6 +631,64 @@ const quickStats = [
         </div>
       </section>
     )}
+
+    <!-- Story Content (shown by default when content modes exist) -->
+    {hasContentModes && contentModes.story && (
+      <div id="content-story" class="content-mode" style="display: block;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
+          <div set:html={contentModes.story} />
+        </div>
+      </div>
+    )}
+
+    <!-- Guide Content (hidden by default) -->
+    {hasContentModes && contentModes.guide && (
+      <div id="content-guide" class="content-mode" style="display: none;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
+          <div set:html={contentModes.guide} />
+        </div>
+      </div>
+    )}
+
+    <!-- YOLO Content (hidden by default) -->
+    {hasContentModes && contentModes.yolo && (
+      <div id="content-yolo" class="content-mode" style="display: none;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
+          <div set:html={contentModes.yolo} />
+        </div>
+      </div>
+    )}
+
+    <!-- Voices/Testimonials (hidden by default) -->
+    {voices.length > 0 && (
+      <div id="content-voices" class="content-mode" style="display: none;">
+        <h2 style="font-size: 1.5rem; font-weight: bold; color: #111827; margin-bottom: 2rem;">Expat Voices</h2>
+        <p style="color: #4B5563; margin-bottom: 2rem;">Real stories and insights from people who've made the move.</p>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          {voices.map((voice: any) => (
+            <div style="background: linear-gradient(135deg, #f9fafb 0%, #fff 100%); border: 1px solid #e5e7eb; border-radius: 0.75rem; padding: 1.5rem;">
+              <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                <div style="width: 3rem; height: 3rem; border-radius: 50%; background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.125rem; flex-shrink: 0;">
+                  {voice.handle?.[0]?.toUpperCase() || voice.author?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600; color: #111827;">{voice.handle || voice.author || 'Anonymous'}</span>
+                    {voice.subreddit && (
+                      <span style="font-size: 0.75rem; color: #6b7280; background: #f3f4f6; padding: 0.125rem 0.5rem; border-radius: 0.25rem;">r/{voice.subreddit}</span>
+                    )}
+                  </div>
+                  <p style="color: #374151; line-height: 1.6;">{voice.quote || voice.content}</p>
+                  {voice.theme && (
+                    <span style="display: inline-block; margin-top: 0.75rem; font-size: 0.75rem; font-weight: 500; color: #92400e; background: #fef3c7; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">{voice.theme}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </main>
 
   <!-- CTA Section -->
@@ -690,6 +804,93 @@ const quickStats = [
           observer.observe(video);
         }
       });
+    });
+  </script>
+
+  <!-- Content Mode Switching Script -->
+  <script is:inline>
+    // Mode descriptions
+    const modeDescriptions = {
+      story: 'Narrative journey through relocation',
+      guide: 'Step-by-step practical guide',
+      yolo: 'Adventure-focused perspective',
+      voices: 'Real experiences from expats'
+    };
+
+    // Get default page elements (everything except content-mode containers)
+    function getDefaultElements() {
+      const main = document.querySelector('main');
+      if (!main) return [];
+      return Array.from(main.children).filter(el => !el.classList.contains('content-mode'));
+    }
+
+    // Switch content mode
+    function switchMode(mode) {
+      // Update button styles
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        const btnMode = btn.getAttribute('data-mode');
+        if (btnMode === mode) {
+          btn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+          btn.classList.remove('text-gray-600', 'hover:text-gray-900');
+        } else {
+          btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+          btn.classList.add('text-gray-600', 'hover:text-gray-900');
+        }
+      });
+
+      // Update description
+      const descEl = document.getElementById('mode-description');
+      if (descEl && modeDescriptions[mode]) {
+        descEl.textContent = modeDescriptions[mode];
+      }
+
+      // Get default page elements
+      const defaultElements = getDefaultElements();
+
+      // Hide default elements when content modes active
+      defaultElements.forEach(el => el.style.display = 'none');
+
+      // Hide all mode containers
+      document.querySelectorAll('.content-mode').forEach(el => {
+        el.style.display = 'none';
+      });
+
+      // Show selected mode container
+      const targetContainer = document.getElementById('content-' + mode);
+      if (targetContainer) {
+        targetContainer.style.display = 'block';
+      }
+
+      // Save preference
+      try {
+        localStorage.setItem('rq_content_mode', mode);
+      } catch (e) {}
+
+      // Scroll to content
+      const main = document.querySelector('main');
+      if (main) {
+        main.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    // Make switchMode globally available
+    window.switchMode = switchMode;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const hasContentModes = document.getElementById('content-story');
+      if (hasContentModes) {
+        try {
+          const savedMode = localStorage.getItem('rq_content_mode');
+          if (savedMode && document.getElementById('content-' + savedMode)) {
+            switchMode(savedMode);
+          } else {
+            switchMode('story');
+          }
+        } catch (e) {
+          switchMode('story');
+        }
+      }
     });
   </script>
 </body>
