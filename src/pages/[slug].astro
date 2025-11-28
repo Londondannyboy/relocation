@@ -1189,8 +1189,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     <!-- Story Content (shown by default when content modes exist) -->
     {hasContentModes && contentModes.story && (
-      <div id="content-story" class="content-mode">
-        <div class="prose prose-lg max-w-none">
+      <div id="content-story" class="content-mode" style="display: block;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
           <div set:html={contentModes.story} />
         </div>
       </div>
@@ -1198,8 +1198,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     <!-- Guide Content (hidden by default) -->
     {hasContentModes && contentModes.guide && (
-      <div id="content-guide" class="content-mode hidden">
-        <div class="prose prose-lg max-w-none">
+      <div id="content-guide" class="content-mode" style="display: none;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
           <div set:html={contentModes.guide} />
         </div>
       </div>
@@ -1207,8 +1207,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     <!-- YOLO Content (hidden by default) -->
     {hasContentModes && contentModes.yolo && (
-      <div id="content-yolo" class="content-mode hidden">
-        <div class="prose prose-lg max-w-none">
+      <div id="content-yolo" class="content-mode" style="display: none;">
+        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
           <div set:html={contentModes.yolo} />
         </div>
       </div>
@@ -1216,8 +1216,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
 
     <!-- Voices/Testimonials (hidden by default) -->
     {voices.length > 0 && (
-      <div id="content-voices" class="content-mode hidden">
-        <h2 class="text-2xl font-bold text-gray-900 mb-8">Expat Voices</h2>
+      <div id="content-voices" class="content-mode" style="display: none;">
+        <h2 style="font-size: 1.5rem; font-weight: bold; color: #111827; margin-bottom: 2rem;">Expat Voices</h2>
         <p class="text-gray-600 mb-8">Real stories and insights from people who've made the move.</p>
         <div class="space-y-6">
           {voices.map((voice: any, i: number) => (
