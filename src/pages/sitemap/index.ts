@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { sql } from '../lib/db';
+import { sql } from '../../lib/db';
 
 export const GET: APIRoute = async ({ site }) => {
   // Remove trailing slash to prevent double slashes in URLs
