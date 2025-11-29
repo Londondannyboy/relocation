@@ -114,9 +114,8 @@ const currentMode = article.article_mode || 'story';
 // Cluster navigation: show links to siblings if article is part of a cluster
 const hasClusterSiblings = article.cluster_id && clusterArticles.length > 1;
 
-// SIMPLIFIED: No special mode rendering - all articles use the same 4-act layout
-// These are kept false to ensure default-content always renders
-const isClusterMode = false;  // All articles render uniformly
+// SIMPLIFIED: All articles render uniformly using 4-act layout
+// No mode switching - content is split by H2 headers into sections
 
 // Fetch related articles
 const relatedResult = await sql`
@@ -226,19 +225,8 @@ function stripScriptTags(html: string): string {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 }
 
-// SIMPLIFIED: All articles render the same way using default 4-act layout
-// No content mode switching - each article is its own page
-const hasContentModes = false;  // default-content always visible
-
-// For cluster mode, use the main content field; for legacy, use content_* columns
-const contentModes = {
-  story: stripScriptTags(isClusterMode && currentMode === 'story' ? article.content : (article.content_story || article.content || '')),
-  guide: stripScriptTags(isClusterMode && currentMode === 'guide' ? article.content : (article.content_guide || '')),
-  yolo: stripScriptTags(isClusterMode && currentMode === 'yolo' ? article.content : (article.content_yolo || ''))
-};
-
-// For cluster mode, the active content is always in article.content
-const activeContent = isClusterMode ? stripScriptTags(article.content || '') : contentModes.story;
+// SIMPLIFIED: All articles render uniformly using 4-act layout
+// The content is stored in article.content and split by H2 sections
 
 // Mode display labels and icons
 const modeConfig: Record<string, { label: string; icon: string; color: string }> = {
@@ -733,7 +721,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           accent-color="#f59e0b"
           autoplay="muted"
           loop
-          start-time={isClusterMode && currentMode !== 'story' ? '0.5' : '0'}
+          start-time="0"
           class="w-full aspect-video"
         />
       </div>
@@ -857,8 +845,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   )}
 
   <main class="max-w-4xl mx-auto px-4 py-12">
-    <!-- Default 4-Act Content (hidden when content modes exist) -->
-    <div id="default-content" style={hasContentModes ? "display: none" : ""}>
+    <!-- Default 4-Act Content - always visible since all articles render uniformly -->
+    <div id="default-content">
     <!-- Preamble (content before first H2) -->
     {contentSections[0] && !contentSections[0].startsWith('<h2') && (
       <div class="prose prose-lg max-w-none mb-8">
@@ -1238,62 +1226,6 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       </section>
     )}
     </div><!-- End default-content -->
-
-    <!-- CLUSTER MODE: Display content directly (SEO-friendly, server-rendered) -->
-    {isClusterMode && (
-      <div id="cluster-content" class="cluster-mode-content">
-        <div class="prose prose-lg max-w-none">
-          <div set:html={activeContent} />
-        </div>
-
-        {/* Voices mode: Display testimonials */}
-        {currentMode === 'voices' && voices.length > 0 && (
-          <div class="mt-12 space-y-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Real Expat Experiences</h2>
-            {voices.map((voice: any, i: number) => (
-              <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-                <div class="flex items-start gap-4">
-                  <div class="w-12 h-12 rounded-full bg-purple-200 flex items-center justify-center text-xl">
-                    {voice.avatar || '👤'}
-                  </div>
-                  <div class="flex-1">
-                    <p class="text-gray-700 text-lg italic mb-4">"{voice.quote || voice.testimonial}"</p>
-                    <div class="flex items-center gap-2 text-sm text-gray-600">
-                      <span class="font-semibold">{voice.name || `Expat ${i + 1}`}</span>
-                      {voice.location && <span>• {voice.location}</span>}
-                      {voice.years && <span>• {voice.years} years</span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Cluster navigation at bottom */}
-        <div class="mt-16 pt-8 border-t border-gray-200">
-          <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Explore Other Perspectives</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {clusterArticles.filter((ca: any) => ca.slug !== slug).map((ca: any) => {
-              const mode = ca.article_mode || 'story';
-              const config = modeConfig[mode] || modeConfig.story;
-              return (
-                <a
-                  href={`/${ca.slug}`}
-                  class="group block p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
-                >
-                  <span class="text-2xl mb-2 block">{config.icon}</span>
-                  <span class="font-medium text-gray-900 group-hover:text-amber-600 transition">{config.label}</span>
-                  <p class="text-xs text-gray-500 mt-1">
-                    {mode === 'story' ? 'Narrative journey' : mode === 'guide' ? 'Practical steps' : mode === 'yolo' ? 'Adventure edition' : 'Real experiences'}
-                  </p>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    )}
 
     <!-- Article Footer -->
     <footer class="pt-8 border-t">
@@ -1773,44 +1705,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     // Make switchMode globally available
     window.switchMode = switchMode;
 
-    // Initialize content mode on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      // Debug: Log all content-mode containers
-      const allModes = document.querySelectorAll('.content-mode');
-      console.log('[DEBUG] Content mode containers found:', allModes.length);
-      allModes.forEach((el, i) => {
-        console.log(`  [${i}] ${el.id}: ${el.innerHTML.length} chars, display: ${el.style.display}`);
-      });
-
-      // Check if content modes exist (content-story container present)
-      const hasContentModes = document.getElementById('content-story');
-      console.log('[DEBUG] content-story exists:', !!hasContentModes);
-
-      if (hasContentModes) {
-        console.log('[DEBUG] content-story innerHTML length:', hasContentModes.innerHTML.length);
-        console.log('[DEBUG] content-story first 200 chars:', hasContentModes.innerHTML.substring(0, 200));
-
-        // Server already renders story mode visible - only switch if saved preference differs
-        try {
-          const savedMode = localStorage.getItem('rq_content_mode');
-          if (savedMode && savedMode !== 'story' && document.getElementById('content-' + savedMode)) {
-            console.log('[DEBUG] Switching to saved mode:', savedMode);
-            switchMode(savedMode);
-          } else {
-            // Story is already visible from server render - just update button styles
-            console.log('[DEBUG] Story mode already visible, just updating UI');
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-              const isActive = btn.dataset.mode === 'story';
-              btn.style.backgroundColor = isActive ? 'white' : 'transparent';
-              btn.style.color = isActive ? '#111827' : '#6b7280';
-              btn.style.fontWeight = isActive ? '600' : '400';
-            });
-          }
-        } catch (e) {
-          console.log('[DEBUG] Error:', e);
-        }
-      }
-    });
+    // All articles now render uniformly - no mode switching needed
+    // The content is server-rendered in the 4-act layout
   </script>
 </body>
 </html>
