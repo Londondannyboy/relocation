@@ -15,7 +15,7 @@ const articles = await sql`
     a.video_url,
     a.video_playback_id
   FROM articles a
-  WHERE a.app IN ('relocation', 'reloguide')
+  WHERE a.app = 'relocation'
     AND a.status = 'published'
   ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
 `;
