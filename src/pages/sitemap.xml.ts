@@ -54,12 +54,12 @@ async function generateSitemapXML(): Promise<string> {
       ORDER BY published_at DESC NULLS LAST
     `;
 
-    // Thumbnail time offsets by mode (so they look different in collections)
+    // Thumbnail time offsets by mode - matches 4-act video structure (3s per act)
     const thumbnailTimeByMode: Record<string, number> = {
-      story: 1,
-      guide: 2,
-      yolo: 3,
-      voices: 4
+      story: 1,    // Act 1: 0-3s
+      guide: 3,    // Act 2: 3-6s
+      yolo: 6,     // Act 3: 6-9s
+      voices: 9    // Act 4: 9-12s
     };
 
     articles.forEach((article: any) => {
