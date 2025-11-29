@@ -249,7 +249,7 @@ const modeConfig: Record<string, { label: string; icon: string; color: string }>
 };
 
 // Debug: Log content mode info at build time
-console.log(`[BUILD] Article: ${slug} | Mode: ${currentMode} | Child: ${isChildArticle} | Cluster: ${isClusterMode} | Cluster articles: ${clusterArticles.length}`);
+console.log(`[BUILD] Article: ${slug} | Mode: ${currentMode} | HasSiblings: ${hasClusterSiblings} | Cluster articles: ${clusterArticles.length}`);
 
 // Parse voices for testimonials
 let voices: any[] = [];
