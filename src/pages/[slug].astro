@@ -68,7 +68,8 @@ const articleResult = await sql`
     a.payload,
     a.cluster_id,
     a.parent_id,
-    a.article_mode
+    a.article_mode,
+    a.is_primary
   FROM articles a
   WHERE a.slug = ${slug}
     AND a.app = 'relocation'
@@ -83,6 +84,7 @@ if (!article) {
 
 // Fetch cluster siblings if this article is part of a cluster
 let clusterArticles: any[] = [];
+let primaryArticle: any = null;
 if (article.cluster_id) {
   const clusterResult = await sql`
     SELECT
@@ -90,7 +92,8 @@ if (article.cluster_id) {
       title,
       article_mode,
       video_playback_id,
-      parent_id
+      parent_id,
+      is_primary
     FROM articles
     WHERE cluster_id = ${article.cluster_id}
       AND app = 'relocation'
@@ -105,7 +108,13 @@ if (article.cluster_id) {
       END
   `;
   clusterArticles = clusterResult || [];
+  // Find the primary article for canonical URL
+  primaryArticle = clusterArticles.find((a: any) => a.is_primary) || clusterArticles[0];
 }
+
+// Canonical URL: non-primary articles should point to the primary
+const canonicalSlug = article.is_primary ? slug : (primaryArticle?.slug || slug);
+const canonicalUrl = `https://relocate.quest/${canonicalSlug}`;
 
 // All articles render the same way - no parent/child distinction in rendering
 // The only difference is database tags (parent_id, cluster_id) for grouping
@@ -236,6 +245,25 @@ const modeConfig: Record<string, { label: string; icon: string; color: string }>
   voices: { label: 'Voices', icon: '🎙️', color: 'purple' }
 };
 
+// Friendly article type/angle labels for hero badge
+const articleTypeLabels: Record<string, string> = {
+  'country_guide': 'Relocation Guide',
+  'transformation': 'Visa Guide',
+  'comparison': 'Comparison',
+  'listicle': 'Top Picks',
+  'topic_cluster': 'Deep Dive',
+  'story': 'Story',
+  'guide': 'Practical Guide',
+  'yolo': 'Adventure',
+  'voices': 'Expat Stories'
+};
+
+// Get friendly label for article angle/type
+const articleBadgeLabel = articleTypeLabels[article.article_angle]
+  || articleTypeLabels[article.article_mode]
+  || article.article_angle
+  || 'Guide';
+
 // Debug: Log content mode info at build time
 console.log(`[BUILD] Article: ${slug} | Mode: ${currentMode} | HasSiblings: ${hasClusterSiblings} | Cluster articles: ${clusterArticles.length}`);
 
@@ -268,6 +296,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{article.title} - Relocation Quest</title>
   <meta name="description" content={excerpt || article.title}>
+  <!-- Canonical URL: non-primary cluster articles point to primary -->
+  <link rel="canonical" href={canonicalUrl} />
   <!-- Premium Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -711,11 +741,10 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
   </style>
 </head>
 <body class="bg-white">
-  <!-- Hero Section with Video - Clean video, title below -->
-  <!-- Non-story modes start at 0.5s to show different frame than story video -->
+  <!-- Hero Section with Video - Title OVERLAID on video -->
   {playbackId ? (
-    <header class="bg-gray-900">
-      <div class="max-w-6xl mx-auto">
+    <header class="bg-gray-900 relative">
+      <div class="max-w-6xl mx-auto relative">
         <mux-player
           playback-id={playbackId}
           accent-color="#f59e0b"
@@ -724,6 +753,15 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
           start-time="0"
           class="w-full aspect-video"
         />
+        <!-- Title Overlay on Video -->
+        <div class="absolute inset-0 flex items-end pointer-events-none">
+          <div class="w-full bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 md:p-10">
+            <div class="max-w-4xl mx-auto">
+              <span class="bg-amber-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 inline-block">{articleBadgeLabel}</span>
+              <h1 class="editorial-headline text-2xl sm:text-3xl md:text-5xl font-semibold text-white leading-tight drop-shadow-lg">{article.title}</h1>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   ) : (
@@ -750,29 +788,26 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     </div>
   )}
 
-  <!-- Title Section - Editorial magazine style -->
+  <!-- Subheader Section - Tagline + metadata below video -->
   {playbackId && (
-    <div class="bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 pt-8 pb-6">
+    <div class="bg-gradient-to-b from-gray-900 to-gray-800 py-6">
       <div class="max-w-4xl mx-auto px-4 animate-fade-in">
-        {article.article_angle && (
-          <div class="flex items-center gap-3 mb-4">
-            <span class="bg-amber-500 text-black text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">{article.article_angle}</span>
-            <span class="text-gray-500 text-xs">•</span>
-            <span class="text-gray-400 text-xs font-medium">{article.word_count?.toLocaleString() || '2,500'} words</span>
-            <span class="text-gray-500 text-xs">•</span>
-            <span class="text-gray-400 text-xs font-medium">12 min read</span>
-          </div>
-        )}
-        <h1 class="editorial-headline text-3xl md:text-5xl font-semibold text-white mt-2 mb-4 leading-tight">{article.title}</h1>
+        {/* Tagline/Subheader - the excerpt serves as the hook */}
         {excerpt && (
-          <p class="text-base md:text-lg text-gray-300 font-light leading-relaxed max-w-3xl">{excerpt}</p>
+          <p class="editorial-headline text-xl md:text-2xl text-amber-400 font-medium leading-relaxed mb-4">{excerpt}</p>
         )}
-        <div class="flex items-center gap-4 mt-6 pt-6 border-t border-gray-700/50">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">RQ</div>
-          <div>
-            <p class="text-white text-sm font-medium">Relocation Quest Editorial</p>
-            <p class="text-gray-400 text-xs">{new Date(article.published_at || article.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+        {/* Metadata bar */}
+        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-xs">RQ</div>
+            <span class="font-medium text-white">Relocation Quest</span>
           </div>
+          <span class="text-gray-600">•</span>
+          <span>{new Date(article.published_at || article.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+          <span class="text-gray-600">•</span>
+          <span>{article.word_count?.toLocaleString() || '2,500'} words</span>
+          <span class="text-gray-600">•</span>
+          <span>{Math.ceil((article.word_count || 2500) / 200)} min read</span>
         </div>
       </div>
     </div>
@@ -821,6 +856,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
               const mode = ca.article_mode || 'story';
               const config = modeConfig[mode] || modeConfig.story;
               const isActive = ca.slug === slug;
+              const isPrimary = ca.is_primary;
               return (
                 <a
                   href={`/${ca.slug}`}
@@ -829,9 +865,11 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
+                  title={isPrimary ? 'Primary article' : ''}
                   >
                     <span class="mr-1">{config.icon}</span>
                     {config.label}
+                    {isPrimary && <span class="ml-1 text-amber-500" title="Primary">★</span>}
                   </a>
                 );
               })}
