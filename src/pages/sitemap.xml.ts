@@ -54,12 +54,12 @@ async function generateSitemapXML(): Promise<string> {
       ORDER BY published_at DESC NULLS LAST
     `;
 
-    // Thumbnail time offsets by mode - matches 4-act video structure (3s per act)
+    // Thumbnail time offsets by mode - parent at Act 1, children spread across 6-12s
     const thumbnailTimeByMode: Record<string, number> = {
-      story: 1,    // Act 1: 0-3s
-      guide: 3,    // Act 2: 3-6s
-      yolo: 6,     // Act 3: 6-9s
-      voices: 9    // Act 4: 9-12s
+      story: 1,    // Parent: Act 1 (0-3s)
+      guide: 6,    // Child: Act 3 start
+      yolo: 8,     // Child: Act 3 mid
+      voices: 10   // Child: Act 4 start
     };
 
     articles.forEach((article: any) => {
