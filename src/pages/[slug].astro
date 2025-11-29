@@ -1279,7 +1279,7 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     <!-- CLUSTER MODE: Display content directly (SEO-friendly, server-rendered) -->
     {isClusterMode && (
       <div id="cluster-content" class="cluster-mode-content">
-        <div style="max-width: 65ch; margin: 0 auto; font-size: 1.125rem; line-height: 1.75;">
+        <div class="prose prose-lg max-w-none">
           <div set:html={activeContent} />
         </div>
 
