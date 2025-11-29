@@ -107,13 +107,16 @@ if (article.cluster_id) {
   clusterArticles = clusterResult || [];
 }
 
-// Check if this is a child article (has parent_id) - these render as regular articles
-const isChildArticle = article.parent_id !== null;
-
-// Check if using cluster architecture (separate articles per mode) vs legacy (single article with content columns)
-// Child articles should NOT trigger cluster mode - they render like regular articles
-const isClusterMode = !isChildArticle && article.cluster_id && clusterArticles.length > 1;
+// All articles render the same way - no parent/child distinction in rendering
+// The only difference is database tags (parent_id, cluster_id) for grouping
 const currentMode = article.article_mode || 'story';
+
+// Cluster navigation: show links to siblings if article is part of a cluster
+const hasClusterSiblings = article.cluster_id && clusterArticles.length > 1;
+
+// SIMPLIFIED: No special mode rendering - all articles use the same 4-act layout
+// These are kept false to ensure default-content always renders
+const isClusterMode = false;  // All articles render uniformly
 
 // Fetch related articles
 const relatedResult = await sql`
@@ -223,11 +226,9 @@ function stripScriptTags(html: string): string {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 }
 
-// Content modes for country guides (Story/Guide/YOLO)
-// Support both legacy (single article with multiple content columns) and cluster (separate articles)
-// Child articles should NOT trigger mode features - they render as regular articles
-const hasLegacyContentModes = !isChildArticle && !!(article.content_story || article.content_guide || article.content_yolo);
-const hasContentModes = hasLegacyContentModes || isClusterMode;
+// SIMPLIFIED: All articles render the same way using default 4-act layout
+// No content mode switching - each article is its own page
+const hasContentModes = false;  // default-content always visible
 
 // For cluster mode, use the main content field; for legacy, use content_* columns
 const contentModes = {
@@ -818,29 +819,27 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     }
   </script>
 
-  <!-- Content Mode Toggle (Story/Guide/YOLO) for Country Guides -->
-  <!-- Cluster mode: Use actual links (SEO-friendly separate pages) -->
-  <!-- Legacy mode: Use JS toggle (single page with hidden content) -->
-  {hasContentModes && (
+  <!-- Cluster Navigation: Links to sibling articles in the cluster -->
+  <!-- Shows for any article that's part of a cluster (parent or child) -->
+  {hasClusterSiblings && (
     <div class="bg-gray-50 border-b border-gray-200 sticky top-0 z-40">
       <div class="max-w-4xl mx-auto px-4 py-3">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reading Mode</span>
 
-          {/* Cluster mode: Navigation links to separate articles */}
-          {isClusterMode ? (
-            <div class="flex gap-1 bg-gray-200 rounded-lg p-1">
-              {clusterArticles.map((ca: any) => {
-                const mode = ca.article_mode || 'story';
-                const config = modeConfig[mode] || modeConfig.story;
-                const isActive = ca.slug === slug;
-                return (
-                  <a
-                    href={`/${ca.slug}`}
-                    class={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                      isActive
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          {/* Navigation links to all cluster articles */}
+          <div class="flex gap-1 bg-gray-200 rounded-lg p-1">
+            {clusterArticles.map((ca: any) => {
+              const mode = ca.article_mode || 'story';
+              const config = modeConfig[mode] || modeConfig.story;
+              const isActive = ca.slug === slug;
+              return (
+                <a
+                  href={`/${ca.slug}`}
+                  class={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    isActive
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
                     <span class="mr-1">{config.icon}</span>
@@ -849,51 +848,9 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
                 );
               })}
             </div>
-          ) : (
-            /* Legacy mode: JS toggle buttons */
-            <div class="flex gap-1 bg-gray-200 rounded-lg p-1" id="content-mode-toggle">
-              <button
-                data-mode="story"
-                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all bg-white text-gray-900 shadow-sm"
-                onclick="switchMode('story')"
-              >
-                📖 Story
-              </button>
-              {contentModes.guide && (
-                <button
-                  data-mode="guide"
-                  class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
-                  onclick="switchMode('guide')"
-                >
-                  📋 Guide
-                </button>
-              )}
-              {contentModes.yolo && (
-                <button
-                  data-mode="yolo"
-                  class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
-                  onclick="switchMode('yolo')"
-                >
-                  🚀 YOLO
-                </button>
-              )}
-              {voices.length > 0 && (
-                <button
-                  data-mode="voices"
-                  class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
-                  onclick="switchMode('voices')"
-                >
-                  🎙️ Voices ({voices.length})
-                </button>
-              )}
-            </div>
-          )}
         </div>
         <p class="text-xs text-gray-400 mt-1" id="mode-description">
-          {isClusterMode
-            ? `${modeConfig[currentMode]?.label || 'Story'} mode - ${currentMode === 'story' ? 'Narrative journey' : currentMode === 'guide' ? 'Practical steps' : currentMode === 'yolo' ? 'Adventure edition' : 'Real experiences'}`
-            : 'Narrative journey through relocation'
-          }
+          {`${modeConfig[currentMode]?.label || 'Story'} mode - ${currentMode === 'story' ? 'Narrative journey' : currentMode === 'guide' ? 'Practical steps' : currentMode === 'yolo' ? 'Adventure edition' : 'Real experiences'}`}
         </p>
       </div>
     </div>
