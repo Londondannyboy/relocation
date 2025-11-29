@@ -67,7 +67,7 @@ articles.forEach((article: any) => {
         {articles.map((article: any) => (
           <a href={`/${article.slug}`} style="text-decoration: none; color: inherit; display: block; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
             {article.mux_playback_id ? (
-              <img src={`https://image.mux.com/${article.mux_playback_id}/animated.webp?width=600&fps=24`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
+              <img src={`https://image.mux.com/${article.mux_playback_id}/animated.webp?start=6&width=600&fps=24`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
             ) : article.featured_asset_url && (
               <img src={article.featured_asset_url} alt={article.featured_asset_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
             )}

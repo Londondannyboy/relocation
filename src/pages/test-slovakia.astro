@@ -1,0 +1,89 @@
+---
+/**
+ * Simple test page - no Tailwind, just inline styles
+ */
+import { sql } from '../lib/db';
+
+// Fetch Slovakia YOLO article
+const result = await sql`
+  SELECT id, slug, title, content, article_mode, video_playback_id
+  FROM articles
+  WHERE slug = 'slovakia-relocation-guide-yolo' AND app = 'relocation'
+  LIMIT 1
+`;
+
+const article = result[0];
+const content = article?.content || 'NO CONTENT FOUND';
+const playbackId = article?.video_playback_id;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test: Slovakia YOLO</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+      background: #fff;
+    }
+    h1 { color: #111; border-bottom: 2px solid #f59e0b; padding-bottom: 10px; }
+    h2 { color: #333; margin-top: 30px; }
+    .debug { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 12px; }
+    .content-area {
+      background: #fafafa;
+      padding: 30px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .content-area h1, .content-area h2, .content-area h3 { color: #111; }
+    .content-area p { margin-bottom: 16px; }
+    .content-area ul, .content-area ol { margin-left: 20px; }
+    .content-area li { margin-bottom: 8px; }
+    video { width: 100%; max-width: 640px; border-radius: 8px; }
+    img { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  <h1>Test Page: Slovakia YOLO (Inline CSS)</h1>
+
+  <div class="debug">
+    <strong>Debug Info:</strong><br>
+    Article ID: {article?.id || 'NOT FOUND'}<br>
+    Slug: {article?.slug || 'NOT FOUND'}<br>
+    Mode: {article?.article_mode || 'NOT FOUND'}<br>
+    Content Length: {content?.length || 0} characters<br>
+    Playback ID: {playbackId || 'NONE'}
+  </div>
+
+  {playbackId && (
+    <div style="margin: 20px 0;">
+      <h2>Video</h2>
+      <video
+        src={`https://stream.mux.com/${playbackId}/high.mp4`}
+        controls
+        muted
+        autoplay
+        loop
+        poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=2&width=640`}
+      />
+    </div>
+  )}
+
+  <h2>Raw Content (set:html)</h2>
+  <div class="content-area" set:html={content} />
+
+  <h2>Content Preview (text only, first 2000 chars)</h2>
+  <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 15px; font-size: 11px; overflow: auto; max-height: 400px;">
+{content?.substring(0, 2000)}...
+  </pre>
+</body>
+</html>
