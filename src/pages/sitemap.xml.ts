@@ -46,12 +46,21 @@ async function generateSitemapXML(): Promise<string> {
         published_at,
         created_at,
         featured_asset_url,
-        video_playback_id
+        video_playback_id,
+        article_mode
       FROM articles
       WHERE app = 'relocation'
         AND status = 'published'
       ORDER BY published_at DESC NULLS LAST
     `;
+
+    // Thumbnail time offsets by mode (so they look different in collections)
+    const thumbnailTimeByMode: Record<string, number> = {
+      story: 1,
+      guide: 2,
+      yolo: 3,
+      voices: 4
+    };
 
     articles.forEach((article: any) => {
       const lastModDate = article.updated_at || article.published_at || article.created_at;
@@ -66,9 +75,10 @@ async function generateSitemapXML(): Promise<string> {
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>`;
 
-      // Add image tags
+      // Add image tags with mode-specific time offset
+      const thumbTime = thumbnailTimeByMode[article.article_mode] || 1;
       const imageUrl = article.video_playback_id
-        ? `https://image.mux.com/${article.video_playback_id}/thumbnail.jpg?time=1`
+        ? `https://image.mux.com/${article.video_playback_id}/thumbnail.jpg?time=${thumbTime}`
         : article.featured_asset_url;
 
       if (imageUrl) {
