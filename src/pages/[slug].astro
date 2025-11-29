@@ -924,7 +924,8 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
     <!-- 4-Act Sections -->
     {fourActContent.slice(0, 4).map((section, i) => {
       const actTime = actTimestamps[i];
-      const sectionContent = contentSections.find(c => c.includes(section.title)) || '';
+      // Index-based matching: contentSections[0] is preamble, [1]+ are H2 sections
+      const sectionContent = contentSections[i + 1] || '';
       const calloutForSection = callouts.find(c => c.placement === `after_section_${i + 1}`);
       const showTimeline = i === 1 && timeline.length > 0;  // After section 2
       const showStoryline = i === 2 && playbackId;  // 2x2 video grid after section 3 (deeper in content)
