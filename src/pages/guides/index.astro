@@ -1,22 +1,52 @@
 ---
 /**
- * Country Guides Index
- * ====================
- * Optimistic, warm design for relocation guides
+ * Country Guides Index - Conde Nast Style
+ * =======================================
+ * Matches the hub design for visual consistency
  */
 import { sql } from '../../lib/db';
 
-// Fetch all published countries
+// Fetch all published countries with their hub videos
 const countriesResult = await sql`
   SELECT
-    id, name, slug, code, flag_emoji, region, continent,
-    relocation_motivations, relocation_tags, facts
-  FROM countries
-  WHERE status = 'published'
-  ORDER BY name ASC
+    c.id, c.name, c.slug, c.code, c.flag_emoji, c.region, c.continent,
+    c.relocation_motivations, c.relocation_tags, c.facts,
+    h.video_playback_id as hub_video,
+    h.slug as hub_slug,
+    h.title as hub_title
+  FROM countries c
+  LEFT JOIN country_hubs h ON h.country_code = c.code AND h.status = 'published'
+  WHERE c.status = 'published'
+  ORDER BY c.name ASC
 `;
 
 const countries = countriesResult || [];
+
+// Get a featured video for the hero (first country with a hub video)
+const featuredCountry = countries.find((c: any) => c.hub_video);
+const heroVideoId = featuredCountry?.hub_video;
+
+// Fetch recent articles for ticker tape
+const tickerResult = await sql`
+  SELECT slug, title, published_at, article_mode, country_code
+  FROM articles
+  WHERE app = 'relocation'
+    AND published_at IS NOT NULL
+  ORDER BY published_at DESC
+  LIMIT 20
+`;
+const tickerArticles = tickerResult || [];
+
+// Format date for ticker
+function formatTickerDate(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
 
 // Group by region with custom ordering
 const regionOrder = ['Europe', 'Southeast Asia', 'Middle East', 'East Asia', 'Oceania', 'North America', 'Central America', 'South America', 'Other'];
@@ -58,6 +88,15 @@ const regionIcons: Record<string, string> = {
   'South America': '🌎',
   'Other': '🌍',
 };
+
+// Mux helpers
+function getMuxThumbnail(id: string, time: number = 5, width: number = 800) {
+  if (!id) return '';
+  return `https://image.mux.com/${id}/thumbnail.jpg?time=${time}&width=${width}`;
+}
+
+// Stats
+const countriesWithVideos = countries.filter((c: any) => c.hub_video).length;
 ---
 
 <!DOCTYPE html>
@@ -67,87 +106,169 @@ const regionIcons: Record<string, string> = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Country Relocation Guides - Your New Chapter Starts Here | Relocation Quest</title>
   <meta name="description" content="Comprehensive relocation guides for countries around the world. Find visa options, tax planning, cost of living, and everything you need for your new adventure.">
+  <link rel="canonical" href="https://relocation.quest/guides">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <!-- Tailwind provided by @astrojs/tailwind integration -->
+
+  <!-- Video Players -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://unpkg.com/@mux/mux-player"></script>
+
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .hero-gradient {
-      background: linear-gradient(135deg, #FF6B35 0%, #F7931E 25%, #FFB347 50%, #FF6B6B 75%, #C44569 100%);
+
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .card-hover:hover {
       transform: translateY(-4px);
       box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
     }
+
     .motivation-badge {
       transition: all 0.2s ease;
     }
     .motivation-badge:hover {
       transform: scale(1.05);
     }
+
+    /* Ticker Tape */
+    .ticker-wrapper {
+      overflow: hidden;
+      background: linear-gradient(90deg, #1f2937 0%, #111827 50%, #1f2937 100%);
+    }
+    .ticker-track {
+      display: flex;
+      animation: ticker-scroll 60s linear infinite;
+    }
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      flex-shrink: 0;
+      padding: 0 2rem;
+      white-space: nowrap;
+    }
   </style>
 </head>
-<body class="bg-gradient-to-b from-amber-50 via-white to-orange-50 min-h-screen">
+
+<body class="bg-white">
   <!-- Navigation -->
-  <nav class="bg-white/80 backdrop-blur-md border-b border-amber-100 sticky top-0 z-50">
+  <nav class="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
         <a href="/" class="text-xl font-bold">
           <span class="text-gray-900">Relocation</span><span class="text-amber-500">Quest</span>
         </a>
         <div class="flex items-center space-x-6">
-          <a href="/" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Home</a>
+          <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
           <a href="/guides" class="text-amber-600 font-semibold">Guides</a>
-          <a href="/articles" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Articles</a>
-          <a href="/companies" class="text-gray-600 hover:text-gray-900 font-medium transition-colors">Companies</a>
+          <a href="/articles" class="text-gray-600 hover:text-gray-900 font-medium">Articles</a>
+          <a href="/companies" class="text-gray-600 hover:text-gray-900 font-medium">Companies</a>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Hero - Warm & Optimistic -->
-  <div class="hero-gradient text-white py-20 relative overflow-hidden">
-    <!-- Decorative elements -->
-    <div class="absolute inset-0 opacity-10">
-      <div class="absolute top-10 left-10 text-8xl">✈️</div>
-      <div class="absolute top-20 right-20 text-6xl">🌍</div>
-      <div class="absolute bottom-10 left-1/4 text-7xl">🏖️</div>
-      <div class="absolute bottom-20 right-1/3 text-5xl">🌅</div>
-    </div>
-
-    <div class="max-w-7xl mx-auto px-4 relative z-10">
-      <div class="max-w-3xl">
+  <!-- Hero Section with Video -->
+  {heroVideoId ? (
+    <header class="relative bg-gray-900">
+      <div class="max-w-6xl mx-auto">
+        <mux-player
+          playback-id={heroVideoId}
+          accent-color="#f59e0b"
+          autoplay="muted"
+          loop
+          class="w-full aspect-video"
+        />
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-8">
+        <div class="max-w-4xl mx-auto">
+          <p class="text-amber-400 font-medium mb-2 text-lg">Your new chapter awaits</p>
+          <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+            Country Relocation Guides
+          </h1>
+          <p class="text-xl text-gray-300 max-w-2xl">
+            Everything you need to know about relocating abroad — visa options, tax planning,
+            cost of living, and the inside scoop from people who've made the move.
+          </p>
+        </div>
+      </div>
+    </header>
+  ) : (
+    <header class="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white py-20 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-10 left-10 text-8xl">✈️</div>
+        <div class="absolute top-20 right-20 text-6xl">🌍</div>
+        <div class="absolute bottom-10 left-1/4 text-7xl">🏖️</div>
+      </div>
+      <div class="max-w-4xl mx-auto px-4 relative z-10">
         <p class="text-amber-100 font-medium mb-2 text-lg">Your new chapter awaits</p>
-        <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">
           Country Relocation Guides
         </h1>
-        <p class="text-xl text-white/90 leading-relaxed mb-8">
+        <p class="text-xl text-white/90 max-w-2xl">
           Everything you need to know about relocating abroad — visa options, tax planning,
           cost of living, and the inside scoop from people who've made the move.
         </p>
+      </div>
+    </header>
+  )}
 
-        <!-- Quick stats -->
-        <div class="flex flex-wrap gap-6">
-          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
-            <span class="text-2xl font-bold">{countries.length}</span>
-            <span class="text-white/80 ml-2">Countries</span>
-          </div>
-          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
-            <span class="text-2xl font-bold">8</span>
-            <span class="text-white/80 ml-2">Relocation Types</span>
-          </div>
-          <div class="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3">
-            <span class="text-2xl font-bold">{Object.keys(regionGroups).length}</span>
-            <span class="text-white/80 ml-2">Regions</span>
-          </div>
+  <!-- Quick Stats Bar -->
+  <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-6">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+          <span class="text-3xl font-bold text-white">{countries.length}</span>
+          <div class="text-white/80 text-sm mt-1">Countries</div>
+        </div>
+        <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+          <span class="text-3xl font-bold text-white">{countriesWithVideos}</span>
+          <div class="text-white/80 text-sm mt-1">Video Guides</div>
+        </div>
+        <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+          <span class="text-3xl font-bold text-white">{Object.keys(regionGroups).length}</span>
+          <div class="text-white/80 text-sm mt-1">Regions</div>
+        </div>
+        <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 text-center">
+          <span class="text-3xl font-bold text-white">8</span>
+          <div class="text-white/80 text-sm mt-1">Relocation Types</div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Ticker Tape - Latest Articles -->
+  {tickerArticles.length > 0 && (
+    <div class="ticker-wrapper py-2">
+      <div class="ticker-track">
+        {[...tickerArticles, ...tickerArticles].map((article: any) => {
+          const pubDate = article.published_at;
+          const modeEmoji = article.article_mode === 'story' ? '📖' :
+                           article.article_mode === 'guide' ? '📋' :
+                           article.article_mode === 'yolo' ? '🚀' :
+                           article.article_mode === 'voices' ? '💬' : '📝';
+          return (
+            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
+              <span class="text-amber-500">{modeEmoji}</span>
+              <span class="font-medium">{article.title}</span>
+              <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  )}
 
   <!-- Motivation Filter Bar -->
-  <div class="bg-white border-b border-amber-100 py-4 sticky top-16 z-40 shadow-sm">
+  <div class="bg-gray-50 border-b border-gray-200 py-4 sticky top-16 z-40">
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex items-center gap-2 overflow-x-auto pb-2">
         <span class="text-gray-500 font-medium text-sm whitespace-nowrap mr-2">Filter by motivation:</span>
@@ -171,7 +292,6 @@ const regionIcons: Record<string, string> = {
         <div class="text-6xl mb-4">🌍</div>
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Guides Coming Soon</h2>
         <p class="text-gray-600">We're preparing comprehensive guides for amazing destinations.</p>
-        <p class="text-gray-500 mt-2">Check back soon for your next adventure!</p>
       </div>
     ) : (
       <div class="space-y-16">
@@ -186,35 +306,57 @@ const regionIcons: Record<string, string> = {
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {regionCountries.map((country) => {
+              {regionCountries.map((country: any) => {
                 const facts = typeof country.facts === 'string'
                   ? JSON.parse(country.facts)
                   : country.facts || {};
                 const motivations = country.relocation_motivations || [];
+                const hasVideo = !!country.hub_video;
 
                 return (
                   <a
-                    href={`/guides/${country.slug}`}
+                    href={country.hub_slug ? `/hubs/${country.hub_slug}` : `/guides/${country.slug}`}
                     class="card-hover bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 group"
                   >
-                    <!-- Card Header with Flag -->
-                    <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 border-b border-amber-100">
-                      <div class="flex items-center gap-4">
-                        <span class="text-5xl drop-shadow-sm">{country.flag_emoji || '🌍'}</span>
-                        <div>
-                          <h3 class="font-bold text-gray-900 text-xl group-hover:text-amber-600 transition-colors">
-                            {country.name}
-                          </h3>
-                          <p class="text-gray-500">{country.region}</p>
+                    {/* Video Thumbnail or Flag Header */}
+                    {hasVideo ? (
+                      <div class="relative">
+                        <img
+                          src={getMuxThumbnail(country.hub_video, 5, 600)}
+                          alt={country.name}
+                          class="w-full aspect-video object-cover"
+                        />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div class="absolute bottom-3 left-3 flex items-center gap-2">
+                          <span class="text-3xl drop-shadow-lg">{country.flag_emoji || '🌍'}</span>
+                          <div>
+                            <h3 class="font-bold text-white text-lg drop-shadow">{country.name}</h3>
+                            <p class="text-white/80 text-sm">{country.region}</p>
+                          </div>
+                        </div>
+                        <div class="absolute top-3 right-3 bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1">
+                          <span>▶</span> Video Guide
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 border-b border-amber-100">
+                        <div class="flex items-center gap-4">
+                          <span class="text-5xl drop-shadow-sm">{country.flag_emoji || '🌍'}</span>
+                          <div>
+                            <h3 class="font-bold text-gray-900 text-xl group-hover:text-amber-600 transition-colors">
+                              {country.name}
+                            </h3>
+                            <p class="text-gray-500">{country.region}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div class="p-6">
-                      <!-- Motivations -->
+                      {/* Motivations */}
                       {motivations.length > 0 && (
                         <div class="flex flex-wrap gap-2 mb-5">
-                          {motivations.slice(0, 4).map((mot: string) => {
+                          {motivations.slice(0, 3).map((mot: string) => {
                             const config = motivationConfig[mot] || { label: mot, icon: '📍', color: 'bg-gray-100 text-gray-600' };
                             return (
                               <span class={`${config.color} px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1`}>
@@ -223,15 +365,15 @@ const regionIcons: Record<string, string> = {
                               </span>
                             );
                           })}
-                          {motivations.length > 4 && (
+                          {motivations.length > 3 && (
                             <span class="text-gray-400 text-xs self-center">
-                              +{motivations.length - 4} more
+                              +{motivations.length - 3} more
                             </span>
                           )}
                         </div>
                       )}
 
-                      <!-- Quick Facts -->
+                      {/* Quick Facts */}
                       <div class="space-y-3 text-sm">
                         {facts.corporate_tax_rate && (
                           <div class="flex justify-between items-center">
@@ -271,10 +413,10 @@ const regionIcons: Record<string, string> = {
                         )}
                       </div>
 
-                      <!-- CTA -->
+                      {/* CTA */}
                       <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
                         <span class="text-amber-600 font-semibold group-hover:text-amber-700 transition-colors">
-                          Explore Guide
+                          {hasVideo ? 'Watch & Read Guide' : 'Explore Guide'}
                         </span>
                         <span class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 group-hover:bg-amber-200 transition-colors">
                           →
@@ -292,7 +434,7 @@ const regionIcons: Record<string, string> = {
   </main>
 
   <!-- CTA Section -->
-  <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-16 mt-16">
+  <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-16">
     <div class="max-w-4xl mx-auto px-4 text-center">
       <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
         Ready to Start Your Journey?
@@ -351,7 +493,7 @@ const regionIcons: Record<string, string> = {
       </div>
       <div class="border-t border-gray-800 pt-8 text-center">
         <p class="text-gray-500 text-sm">
-          © 2024 Relocation Quest. All rights reserved. Your journey starts here.
+          © 2024 Relocation Quest. All rights reserved.
         </p>
       </div>
     </div>
