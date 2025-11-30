@@ -1,11 +1,7 @@
-import { StackServerApp } from "@stackframe/stack";
+import { StackClientApp } from "@stackframe/react";
 
-export const stackServerApp = new StackServerApp({
-  tokenStore: "nextjs-cookie",
-  urls: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
-    afterSignIn: "/",
-    afterSignUp: "/",
-  },
+export const stackClientApp = new StackClientApp({
+  projectId: import.meta.env.PUBLIC_STACK_PROJECT_ID,
+  publishableClientKey: import.meta.env.PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY,
+  tokenStore: "cookie",
 });

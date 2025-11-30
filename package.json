@@ -18,7 +18,7 @@
     "@astrojs/tailwind": "^6.0.2",
     "@humeai/voice-react": "^0.2.8",
     "@neondatabase/serverless": "^1.0.2",
-    "@stackframe/stack": "^2.8.51",
+    "@stackframe/react": "^2.8.54",
     "@tailwindcss/typography": "^0.5.19",
     "astro": "^5.15.4",
     "hume": "^0.15.7",

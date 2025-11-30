@@ -199,10 +199,12 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     } else {
       console.log('[VoiceInterface] Attempting to connect with config:', configId);
       try {
+        // Pass accessToken both in auth (for SDK) AND at top level (for Hume API)
         await connect({
           auth: { type: 'accessToken', value: accessToken },
           configId: configId,
-        });
+          accessToken: accessToken,  // Needed for WebSocket query params
+        } as any);
         console.log('[VoiceInterface] Connect resolved');
       } catch (err) {
         console.error('[VoiceInterface] Failed to connect:', err);

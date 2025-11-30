@@ -1,0 +1,30 @@
+---
+// Stack Auth handler - serves out-of-the-box sign-in/sign-up pages
+// Routes: /handler/sign-in, /handler/sign-up, /handler/sign-out, etc.
+
+import StackAuthHandler from '../../components/StackAuthHandler';
+
+export const prerender = false;
+
+const path = Astro.url.pathname;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relocation Quest - Authentication</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <StackAuthHandler path={path} client:only="react" />
+</body>
+</html>
