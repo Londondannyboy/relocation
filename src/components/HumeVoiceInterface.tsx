@@ -772,34 +772,43 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                 {/* Links */}
                 {category.links.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {category.links.slice(0, 4).map((link, i) => (
-                      <a
-                        key={i}
-                        href={link.url || '#'}
-                        target={link.type === 'external' ? '_blank' : undefined}
-                        rel={link.type === 'external' ? 'noopener noreferrer' : undefined}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 12px',
-                          background: `${category.color}22`,
-                          border: `1px solid ${category.color}44`,
-                          borderRadius: '20px',
-                          textDecoration: 'none',
-                          color: category.color,
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          transition: 'background 0.2s',
-                        }}
-                      >
-                        {link.type === 'article' && '📄'}
-                        {link.type === 'company' && '🏢'}
-                        {link.type === 'country' && '🗺️'}
-                        {link.type === 'external' && '🔗'}
-                        {link.title}
-                      </a>
-                    ))}
+                    {category.links.slice(0, 4).map((link, i) => {
+                      const isExternal = link.type === 'external';
+                      return (
+                        <a
+                          key={i}
+                          href={link.url || '#'}
+                          target={isExternal ? '_blank' : undefined}
+                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: isExternal ? '8px 14px' : '6px 12px',
+                            background: isExternal
+                              ? 'linear-gradient(135deg, rgba(251,191,36,0.3), rgba(245,158,11,0.3))'
+                              : `${category.color}33`,
+                            border: isExternal
+                              ? '2px solid rgba(251,191,36,0.6)'
+                              : `1px solid ${category.color}55`,
+                            borderRadius: isExternal ? '12px' : '20px',
+                            textDecoration: 'none',
+                            color: isExternal ? '#fbbf24' : 'white',
+                            fontSize: '12px',
+                            fontWeight: isExternal ? 600 : 500,
+                            transition: 'all 0.2s',
+                            boxShadow: isExternal ? '0 2px 8px rgba(251,191,36,0.2)' : 'none',
+                          }}
+                        >
+                          {link.type === 'article' && '📄'}
+                          {link.type === 'company' && '🏢'}
+                          {link.type === 'country' && '🗺️'}
+                          {isExternal && '🌐'}
+                          {link.title}
+                          {isExternal && <span style={{ fontSize: '10px', opacity: 0.8 }}>↗</span>}
+                        </a>
+                      );
+                    })}
                   </div>
                 )}
               </div>
