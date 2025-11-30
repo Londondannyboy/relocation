@@ -484,107 +484,114 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </section>
   )}
 
-  <!-- Main Hub Content with Embedded Videos Spaced Throughout -->
+  <!-- Main Hub Content with Video Thumbnails Above Each Section -->
   <main class="max-w-4xl mx-auto px-4 py-12">
 
-    <!-- Hub Content - Split into sections with videos between -->
     {hub.hub_content && (() => {
-      // Split content by major headers (##) to insert videos between sections
+      // Split content by H2 headers to process each section
       const sections = hub.hub_content.split(/(?=## )/);
-      const introSection = sections[0] || '';
-      const middleSections = sections.slice(1, Math.ceil(sections.length / 2)).join('');
-      const lateSections = sections.slice(Math.ceil(sections.length / 2)).join('');
 
-      return null; // We'll render manually below
-    })()}
+      // Topic-to-video mapping based on section keywords
+      const topicVideoMap: Record<string, { mode: string; keywords: string[] }> = {
+        'guide': { mode: 'guide', keywords: ['visa', 'permit', 'legal', 'process', 'step', 'how to', 'requirement', 'document', 'application'] },
+        'yolo': { mode: 'yolo', keywords: ['lifestyle', 'beach', 'adventure', 'nightlife', 'culture', 'food', 'entertainment', 'leisure', 'climate', 'weather'] },
+        'voices': { mode: 'voices', keywords: ['expat', 'community', 'experience', 'story', 'interview', 'testimonial', 'real', 'people'] },
+        'story': { mode: 'story', keywords: ['overview', 'introduction', 'why', 'history', 'background', 'journey'] },
+      };
 
-    <!-- Intro Content -->
-    {hub.hub_content && (
-      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/)[0] || ''} />
-    )}
+      // Match section header to video mode
+      function matchSectionToVideo(headerText: string): string | null {
+        const lower = headerText.toLowerCase();
+        for (const [mode, config] of Object.entries(topicVideoMap)) {
+          if (config.keywords.some(kw => lower.includes(kw))) {
+            return config.mode;
+          }
+        }
+        return null;
+      }
 
-    <!-- Guide Video Section - After intro, before main content -->
-    {videosByMode.guide?.playbackId && (
-      <section class="my-12 -mx-4 px-4">
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-2xl">📋</span>
-            <h3 class="text-lg font-bold text-gray-900">The Practical Guide</h3>
-          </div>
-          <div class="rounded-xl overflow-hidden shadow-lg">
-            <mux-player
-              playback-id={videosByMode.guide.playbackId}
-              accent-color="#3b82f6"
-              class="w-full aspect-video"
-            />
-          </div>
-          <p class="text-sm text-gray-600 mt-3">{videosByMode.guide.description}</p>
-          <a href={`/${videosByMode.guide.slug}`} class="inline-flex items-center gap-2 text-blue-600 font-medium mt-2 hover:text-blue-700">
-            Read full guide →
-          </a>
+      // Get thumbnail time based on mode (different acts)
+      function getThumbTime(mode: string): number {
+        const times: Record<string, number> = { 'story': 1.5, 'guide': 4.5, 'yolo': 7.5, 'voices': 10.5 };
+        return times[mode] || 5;
+      }
+
+      // Track used videos to avoid repetition
+      const usedModes = new Set<string>();
+
+      return sections;
+    })().map((section: string, index: number) => {
+      // Extract header text for matching
+      const headerMatch = section.match(/^## (.+?)[\n\r]/);
+      const headerText = headerMatch ? headerMatch[1] : '';
+
+      // Topic-to-video mapping
+      const topicVideoMap: Record<string, string[]> = {
+        'guide': ['visa', 'permit', 'legal', 'process', 'step', 'requirement', 'document', 'application', 'tax', 'corporate', 'business'],
+        'yolo': ['lifestyle', 'beach', 'adventure', 'nightlife', 'culture', 'food', 'entertainment', 'leisure', 'climate', 'living', 'cost'],
+        'voices': ['expat', 'community', 'experience', 'testimonial', 'real', 'people', 'voices'],
+        'story': ['overview', 'introduction', 'why', 'history', 'background', 'journey', 'draw'],
+      };
+
+      // Match section to video
+      let matchedMode: string | null = null;
+      const lower = headerText.toLowerCase();
+      for (const [mode, keywords] of Object.entries(topicVideoMap)) {
+        if (keywords.some(kw => lower.includes(kw))) {
+          matchedMode = mode;
+          break;
+        }
+      }
+
+      // Get video for this section
+      const video = matchedMode && videosByMode[matchedMode];
+      const thumbTime = matchedMode === 'story' ? 1.5 : matchedMode === 'guide' ? 4.5 : matchedMode === 'yolo' ? 7.5 : 10.5;
+
+      // Mode styling
+      const modeStyles: Record<string, { bg: string; accent: string; icon: string }> = {
+        'guide': { bg: 'from-blue-50 to-indigo-50', accent: 'blue', icon: '📋' },
+        'yolo': { bg: 'from-pink-50 to-rose-50', accent: 'pink', icon: '🚀' },
+        'voices': { bg: 'from-purple-50 to-violet-50', accent: 'purple', icon: '💬' },
+        'story': { bg: 'from-amber-50 to-orange-50', accent: 'amber', icon: '📖' },
+      };
+      const style = matchedMode ? modeStyles[matchedMode] : null;
+
+      return (
+        <div class="mb-8">
+          {/* Video thumbnail above section (only for H2 sections with matched video) */}
+          {index > 0 && video?.playbackId && style && (
+            <a href={`/${video.slug}`} class={`block mb-6 group`}>
+              <div class={`bg-gradient-to-r ${style.bg} rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow`}>
+                <div class="flex items-stretch">
+                  <div class="w-1/3 relative">
+                    <img
+                      src={getMuxThumbnail(video.playbackId, thumbTime, 400)}
+                      alt={headerText}
+                      class="w-full h-full object-cover aspect-video"
+                    />
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <span class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-gray-900">▶</span>
+                    </div>
+                  </div>
+                  <div class="flex-1 p-4 flex flex-col justify-center">
+                    <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                      <span>{style.icon}</span>
+                      <span class="uppercase tracking-wider">{matchedMode} video</span>
+                    </div>
+                    <p class={`font-semibold text-${style.accent}-700 group-hover:text-${style.accent}-800`}>
+                      Watch: {video.title}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </a>
+          )}
+
+          {/* Section content */}
+          <div class="prose max-w-none" set:html={section} />
         </div>
-      </section>
-    )}
-
-    <!-- Middle Content Sections -->
-    {hub.hub_content && (() => {
-      const sections = hub.hub_content.split(/(?=## )/);
-      const middleSections = sections.slice(1, Math.ceil(sections.length / 2)).join('');
-      return middleSections;
-    })() && (
-      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/).slice(1, Math.ceil(hub.hub_content.split(/(?=## )/).length / 2)).join('')} />
-    )}
-
-    <!-- YOLO Video Section - Middle of content -->
-    {videosByMode.yolo?.playbackId && (
-      <section class="my-12 -mx-4 px-4">
-        <div class="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-2xl">🚀</span>
-            <h3 class="text-lg font-bold text-gray-900">Life & Adventure in {hub.location_name}</h3>
-          </div>
-          <div class="rounded-xl overflow-hidden shadow-lg">
-            <mux-player
-              playback-id={videosByMode.yolo.playbackId}
-              accent-color="#ec4899"
-              class="w-full aspect-video"
-            />
-          </div>
-          <p class="text-sm text-gray-600 mt-3">{videosByMode.yolo.description}</p>
-          <a href={`/${videosByMode.yolo.slug}`} class="inline-flex items-center gap-2 text-pink-600 font-medium mt-2 hover:text-pink-700">
-            Explore the adventure →
-          </a>
-        </div>
-      </section>
-    )}
-
-    <!-- Late Content Sections -->
-    {hub.hub_content && (
-      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/).slice(Math.ceil(hub.hub_content.split(/(?=## )/).length / 2)).join('')} />
-    )}
-
-    <!-- Voices Video Section - Near end before topic articles -->
-    {videosByMode.voices?.playbackId && (
-      <section class="my-12 -mx-4 px-4">
-        <div class="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="text-2xl">💬</span>
-            <h3 class="text-lg font-bold text-gray-900">Real Voices from {hub.location_name}</h3>
-          </div>
-          <div class="rounded-xl overflow-hidden shadow-lg">
-            <mux-player
-              playback-id={videosByMode.voices.playbackId}
-              accent-color="#8b5cf6"
-              class="w-full aspect-video"
-            />
-          </div>
-          <p class="text-sm text-gray-600 mt-3">{videosByMode.voices.description}</p>
-          <a href={`/${videosByMode.voices.slug}`} class="inline-flex items-center gap-2 text-purple-600 font-medium mt-2 hover:text-purple-700">
-            Hear more stories →
-          </a>
-        </div>
-      </section>
-    )}
+      );
+    })}
 
     <!-- Topic Cluster Articles - Clean List Format -->
     {topicArticles.length > 0 && (
