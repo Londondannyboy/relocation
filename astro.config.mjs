@@ -8,6 +8,7 @@ import react from '@astrojs/react';
 export default defineConfig({
   site: 'https://relocation.quest',
   output: 'server',
+  trailingSlash: 'ignore',
   adapter: node({
     mode: 'standalone'
   }),

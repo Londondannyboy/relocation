@@ -36,11 +36,10 @@ import { sql } from '../lib/db';
 const { slug } = Astro.params;
 
 // Reserved paths that have their own index.astro files
-// These should NOT be caught by the dynamic [slug] route
+// Use Astro.rewrite to forward to the correct folder/index.astro route
 const RESERVED_PATHS = ['articles', 'guides', 'companies', 'hubs', 'auth', 'handler'];
 if (slug && RESERVED_PATHS.includes(slug)) {
-  // Redirect to the folder route with trailing slash
-  return Astro.redirect(`/${slug}/`, 307);
+  return Astro.rewrite(new Request(new URL(`/${slug}/`, Astro.url)));
 }
 
 // Prevent CDN caching - always fetch fresh from Neon
