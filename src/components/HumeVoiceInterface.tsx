@@ -168,11 +168,27 @@ function parseMessageWithLinks(content: string): { text: string; links: RelatedC
 
 const GATEWAY_URL = 'https://quest-gateway-production.up.railway.app';
 
+// Generate or retrieve session ID for ZEP memory
+function getSessionId(): string {
+  const storageKey = 'relocation_voice_session';
+  let sessionId = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+  if (!sessionId) {
+    // Generate new session ID
+    sessionId = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, sessionId);
+    }
+  }
+  return sessionId;
+}
+
 // Inner component that uses Hume hooks
 function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [relatedContent, setRelatedContent] = useState<RelatedContent | null>(null);
+  const [sessionId] = useState<string>(() => getSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isConnected = status.value === 'connected';
@@ -188,17 +204,22 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     console.log('[VoiceInterface] Component mounted, initial status:', status.value);
     console.log('[VoiceInterface] accessToken length:', accessToken?.length);
     console.log('[VoiceInterface] configId:', configId);
+    console.log('[VoiceInterface] sessionId:', sessionId);
   }, []);
 
   // Fetch related content when user message is detected
-  const fetchRelatedContent = async (query: string) => {
+  const fetchRelatedContent = async (query: string, conversationHistory: Message[]) => {
     if (!query) return;
 
     try {
       const response = await fetch(`${GATEWAY_URL}/voice/related-content`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({
+          query,
+          session_id: sessionId,
+          messages: conversationHistory.map(m => ({ role: m.role, content: m.content }))
+        })
       });
 
       if (response.ok) {
@@ -255,7 +276,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
 
     // Also fetch related content from API for each new user query
     if (latestUserQuery) {
-      fetchRelatedContent(latestUserQuery);
+      fetchRelatedContent(latestUserQuery, processed);
     }
   }, [messages]);
 

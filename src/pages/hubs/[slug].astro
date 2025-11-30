@@ -406,32 +406,66 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       <div class="prose max-w-none" set:html={hub.hub_content} />
     )}
 
+    <!-- Visual Break: Video Perspectives Grid -->
+    {clusterArticles.length >= 2 && (
+      <section class="my-12 bg-gradient-to-r from-amber-50 to-orange-50 -mx-4 px-4 py-8 rounded-2xl">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">See {hub.location_name} Through Different Lenses</h3>
+        <div class="grid grid-cols-2 gap-4">
+          {clusterArticles.slice(0, 4).map((article: any, i: number) => {
+            const config = modeConfig[article.article_mode] || modeConfig.story;
+            // Each video gets a different act time for visual variety
+            const actTimes = [2, 5, 8, 11];
+            return (
+              <a href={`/${article.slug}`} class="group relative rounded-xl overflow-hidden">
+                <img
+                  src={getMuxThumbnail(article.video_playback_id, actTimes[i], 500)}
+                  alt={config.label}
+                  class="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
+                  <div>
+                    <span class="text-white text-2xl">{config.icon}</span>
+                    <span class="text-white font-semibold ml-2">{config.label}</span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
     <!-- Topic Cluster Articles -->
     {topicArticles.length > 0 && (
       <section class="mt-16 pt-8 border-t border-gray-200">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Deep Dive Articles</h2>
         <p class="text-gray-600 mb-8">Detailed guides on specific topics for {hub.location_name}.</p>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topicArticles.map((article: any) => (
-            <a
-              href={`/${article.slug}`}
-              class="article-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100"
-            >
-              {article.video_playback_id && (
-                <img
-                  src={getMuxThumbnail(article.video_playback_id, 5, 400)}
-                  alt={article.title}
-                  class="w-full aspect-video object-cover"
-                />
-              )}
-              <div class="p-4">
-                <h3 class="font-semibold text-gray-900 line-clamp-2">{article.title}</h3>
-                {article.meta_description && (
-                  <p class="text-sm text-gray-600 mt-2 line-clamp-2">{article.meta_description}</p>
+          {topicArticles.map((article: any, index: number) => {
+            // Vary thumbnail times across different acts for visual variety
+            const actTimes = [1, 3, 5, 7, 9, 11];
+            const thumbTime = actTimes[index % 6];
+            return (
+              <a
+                href={`/${article.slug}`}
+                class="article-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100"
+              >
+                {article.video_playback_id && (
+                  <img
+                    src={getMuxThumbnail(article.video_playback_id, thumbTime, 400)}
+                    alt={article.title}
+                    class="w-full aspect-video object-cover"
+                  />
                 )}
-              </div>
-            </a>
-          ))}
+                <div class="p-4">
+                  <h3 class="font-semibold text-gray-900 line-clamp-2">{article.title}</h3>
+                  {article.meta_description && (
+                    <p class="text-sm text-gray-600 mt-2 line-clamp-2">{article.meta_description}</p>
+                  )}
+                </div>
+              </a>
+            );
+          })}
         </div>
       </section>
     )}
