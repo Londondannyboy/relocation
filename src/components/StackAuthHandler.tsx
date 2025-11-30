@@ -11,7 +11,7 @@ function AuthHandlerWithRedirect() {
     // Only redirect from oauth-callback after successful auth
     if (user && isCallback) {
       const timer = setTimeout(() => {
-        window.location.href = "/voice";
+        window.location.href = "/dashboard";
       }, 300);
       return () => clearTimeout(timer);
     }

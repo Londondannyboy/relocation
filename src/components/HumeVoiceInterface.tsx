@@ -501,7 +501,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                 >
                   {msg.content}
                 </div>
-                {/* Inline links for assistant messages */}
+                {/* Inline links for assistant messages - only show if URL exists */}
                 {msg.role === 'assistant' && msg.links && (
                   <div style={{
                     maxWidth: '80%',
@@ -510,10 +510,12 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                     flexWrap: 'wrap',
                     gap: '6px',
                   }}>
-                    {msg.links.countries?.map((c, idx) => (
+                    {msg.links.countries?.filter(c => c.url).map((c, idx) => (
                       <a
                         key={`country-${idx}`}
                         href={c.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -530,10 +532,12 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                         {c.flag || '🌍'} {c.name}
                       </a>
                     ))}
-                    {msg.links.articles?.slice(0, 3).map((a, idx) => (
+                    {msg.links.articles?.filter(a => a.url).slice(0, 3).map((a, idx) => (
                       <a
                         key={`article-${idx}`}
                         href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -549,10 +553,12 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                         📄 {a.short_title || (a.title.length > 25 ? a.title.slice(0, 22) + '...' : a.title)}
                       </a>
                     ))}
-                    {msg.links.companies?.slice(0, 2).map((co, idx) => (
+                    {msg.links.companies?.filter(co => co.url).slice(0, 2).map((co, idx) => (
                       <a
                         key={`company-${idx}`}
                         href={co.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -749,9 +755,18 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                   </span>
                 </div>
 
-                {/* Facts */}
+                {/* Facts/Topics */}
                 {category.facts.length > 0 && (
-                  <div style={{ marginBottom: category.links.length > 0 ? '12px' : 0 }}>
+                  <div style={{ marginBottom: category.links.filter(l => l.url).length > 0 ? '16px' : 0 }}>
+                    <div style={{
+                      color: 'rgba(255,255,255,0.5)',
+                      fontSize: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}>
+                      📌 Key Facts
+                    </div>
                     {category.facts.map((fact, i) => (
                       <div
                         key={i}
@@ -769,17 +784,27 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                   </div>
                 )}
 
-                {/* Links */}
-                {category.links.length > 0 && (
+                {/* Resource Links - only show if URL exists */}
+                {category.links.filter(l => l.url).length > 0 && (
+                  <div>
+                    <div style={{
+                      color: 'rgba(255,255,255,0.5)',
+                      fontSize: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}>
+                      🔗 Resources
+                    </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {category.links.slice(0, 4).map((link, i) => {
+                    {category.links.filter(link => link.url).slice(0, 4).map((link, i) => {
                       const isExternal = link.type === 'external';
                       return (
                         <a
                           key={i}
-                          href={link.url || '#'}
-                          target={isExternal ? '_blank' : undefined}
-                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          href={link.url!}
+                          target={isExternal || link.url!.startsWith('http') ? '_blank' : undefined}
+                          rel={isExternal || link.url!.startsWith('http') ? 'noopener noreferrer' : undefined}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -809,6 +834,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                         </a>
                       );
                     })}
+                  </div>
                   </div>
                 )}
               </div>
