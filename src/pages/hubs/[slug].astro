@@ -72,7 +72,7 @@ const country = countryResult[0];
 const clusterResult = await sql`
   SELECT
     id, slug, title, meta_description, article_mode, video_playback_id, is_primary,
-    video_narrative, payload
+    video_narrative, payload, video_topics, video_description
   FROM articles
   WHERE cluster_id = ${hub.cluster_id}
     AND app = 'relocation'
@@ -87,6 +87,20 @@ const clusterResult = await sql`
     END
 `;
 const clusterArticles = clusterResult || [];
+
+// Build video lookup by mode for section embedding
+const videosByMode: Record<string, any> = {};
+clusterArticles.forEach((a: any) => {
+  if (a.video_playback_id && a.article_mode) {
+    videosByMode[a.article_mode] = {
+      playbackId: a.video_playback_id,
+      title: a.title,
+      slug: a.slug,
+      topics: a.video_topics || [],
+      description: a.video_description || ''
+    };
+  }
+});
 
 // Log video IDs for debugging
 console.log('Cluster articles with videos:', clusterArticles.map((a: any) => ({
@@ -470,46 +484,81 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </section>
   )}
 
-  <!-- 4-Act Story Timeline (from Story video) -->
-  {clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id && (
-    <section class="bg-gray-900 py-8">
-      <div class="max-w-5xl mx-auto px-4">
-        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-6 text-center">
-          The {hub.location_name} Story - 4 Acts
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { act: 1, title: 'The Draw', time: 1.5, desc: 'What calls people here' },
-            { act: 2, title: 'The Opportunity', time: 4.5, desc: 'Business & lifestyle' },
-            { act: 3, title: 'The Journey', time: 7.5, desc: 'Making the move' },
-            { act: 4, title: 'The New Life', time: 10.5, desc: 'Living the dream' }
-          ].map((act) => {
-            const storyVideo = clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id;
-            return (
-              <div class="bg-gray-800 rounded-xl overflow-hidden">
-                <img
-                  src={getMuxThumbnail(storyVideo, act.time, 400)}
-                  alt={act.title}
-                  class="w-full aspect-video object-cover"
-                />
-                <div class="p-3">
-                  <span class="text-amber-500 text-xs font-bold">ACT {act.act}</span>
-                  <h4 class="text-white font-semibold text-sm">{act.title}</h4>
-                  <p class="text-gray-400 text-xs mt-1">{act.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  )}
-
-  <!-- Main Hub Content -->
+  <!-- Main Hub Content with Embedded Videos -->
   <main class="max-w-4xl mx-auto px-4 py-12">
+
+    <!-- Guide Video Section - Practical Steps -->
+    {videosByMode.guide?.playbackId && (
+      <section class="my-8 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">📋</span>
+            <h3 class="text-lg font-bold text-gray-900">The Practical Guide</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.guide.playbackId}
+              accent-color="#3b82f6"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.guide.description}</p>
+          <a href={`/${videosByMode.guide.slug}`} class="inline-flex items-center gap-2 text-blue-600 font-medium mt-2 hover:text-blue-700">
+            Read full guide →
+          </a>
+        </div>
+      </section>
+    )}
+
     <!-- Hub Content (generated HTML) -->
     {hub.hub_content && (
       <div class="prose max-w-none" set:html={hub.hub_content} />
+    )}
+
+    <!-- YOLO Video Section - Lifestyle & Adventure -->
+    {videosByMode.yolo?.playbackId && (
+      <section class="my-12 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">🚀</span>
+            <h3 class="text-lg font-bold text-gray-900">Life & Adventure in {hub.location_name}</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.yolo.playbackId}
+              accent-color="#ec4899"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.yolo.description}</p>
+          <a href={`/${videosByMode.yolo.slug}`} class="inline-flex items-center gap-2 text-pink-600 font-medium mt-2 hover:text-pink-700">
+            Explore the adventure →
+          </a>
+        </div>
+      </section>
+    )}
+
+    <!-- Voices Video Section - Real Expat Stories -->
+    {videosByMode.voices?.playbackId && (
+      <section class="my-12 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">💬</span>
+            <h3 class="text-lg font-bold text-gray-900">Real Voices from {hub.location_name}</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.voices.playbackId}
+              accent-color="#8b5cf6"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.voices.description}</p>
+          <a href={`/${videosByMode.voices.slug}`} class="inline-flex items-center gap-2 text-purple-600 font-medium mt-2 hover:text-purple-700">
+            Hear more stories →
+          </a>
+        </div>
+      </section>
     )}
 
     <!-- Visual Break: Video Perspectives Grid -->
@@ -569,6 +618,48 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       </section>
     )}
   </main>
+
+  <!-- 4-Act Story Timeline (moved to bottom for better flow) -->
+  {clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id && (
+    <section class="bg-gray-900 py-12">
+      <div class="max-w-5xl mx-auto px-4">
+        <h3 class="text-xl font-bold text-white mb-2 text-center">
+          The {hub.location_name} Story
+        </h3>
+        <p class="text-gray-400 text-center mb-8">Your relocation journey in 4 acts</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { act: 1, title: 'The Draw', time: 1.5, desc: 'What calls people here' },
+            { act: 2, title: 'The Opportunity', time: 4.5, desc: 'Business & lifestyle' },
+            { act: 3, title: 'The Journey', time: 7.5, desc: 'Making the move' },
+            { act: 4, title: 'The New Life', time: 10.5, desc: 'Living the dream' }
+          ].map((act) => {
+            const storyVideo = clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id;
+            return (
+              <div class="bg-gray-800 rounded-xl overflow-hidden hover:bg-gray-750 transition-colors">
+                <img
+                  src={getMuxThumbnail(storyVideo, act.time, 400)}
+                  alt={act.title}
+                  class="w-full aspect-video object-cover"
+                />
+                <div class="p-3">
+                  <span class="text-amber-500 text-xs font-bold">ACT {act.act}</span>
+                  <h4 class="text-white font-semibold text-sm">{act.title}</h4>
+                  <p class="text-gray-400 text-xs mt-1">{act.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div class="text-center mt-6">
+          <a href={`/${clusterArticles.find((a: any) => a.article_mode === 'story')?.slug}`}
+             class="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-medium">
+            Watch the full story →
+          </a>
+        </div>
+      </div>
+    </section>
+  )}
 
   <!-- CTA Section -->
   <section class="bg-gradient-to-r from-amber-500 to-orange-500 py-16">
