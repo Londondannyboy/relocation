@@ -289,29 +289,6 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </div>
   </nav>
 
-  <!-- Ticker Tape -->
-  {tickerArticles.length > 0 && (
-    <div class="ticker-wrapper py-2">
-      <div class="ticker-track">
-        {/* Duplicate for seamless loop */}
-        {[...tickerArticles, ...tickerArticles].map((article: any) => {
-          const pubDate = article.published_at || article.created_at;
-          const modeEmoji = article.article_mode === 'story' ? '📖' :
-                           article.article_mode === 'guide' ? '📋' :
-                           article.article_mode === 'yolo' ? '🚀' :
-                           article.article_mode === 'voices' ? '💬' : '📝';
-          return (
-            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
-              <span class="text-amber-500">{modeEmoji}</span>
-              <span class="font-medium">{article.title}</span>
-              <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
-            </a>
-          );
-        })}
-      </div>
-    </div>
-  )}
-
   <!-- Hero Section with Video -->
   {playbackId ? (
     <header class="relative bg-gray-900">
@@ -401,6 +378,29 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
         </div>
       </div>
     </section>
+  )}
+
+  <!-- Ticker Tape - Latest Articles -->
+  {tickerArticles.length > 0 && (
+    <div class="ticker-wrapper py-2">
+      <div class="ticker-track">
+        {/* Duplicate for seamless loop */}
+        {[...tickerArticles, ...tickerArticles].map((article: any) => {
+          const pubDate = article.published_at || article.created_at;
+          const modeEmoji = article.article_mode === 'story' ? '📖' :
+                           article.article_mode === 'guide' ? '📋' :
+                           article.article_mode === 'yolo' ? '🚀' :
+                           article.article_mode === 'voices' ? '💬' : '📝';
+          return (
+            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
+              <span class="text-amber-500">{modeEmoji}</span>
+              <span class="font-medium">{article.title}</span>
+              <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
   )}
 
   <!-- Cluster Articles Navigation - Each with its OWN unique video -->
