@@ -1,26 +1,113 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StackProvider, StackTheme, useUser } from '@stackframe/react';
 import { stackClientApp } from '../stack/client';
 
-const GATEWAY_URL = 'https://quest-gateway-production.up.railway.app';
-const APP_ID = 'relocation';
+// Profile field configuration with icons and labels
+const PROFILE_FIELDS: Record<string, { icon: string; label: string; priority: number; format?: (v: any) => string }> = {
+  current_country: { icon: '📍', label: 'Location', priority: 1 },
+  current_city: { icon: '🏙️', label: 'City', priority: 2 },
+  nationality: { icon: '🛂', label: 'Nationality', priority: 3 },
+  destination_countries: {
+    icon: '🎯',
+    label: 'Interested In',
+    priority: 4,
+    format: (v: string[]) => v?.join(', ')
+  },
+  relationship_status: { icon: '💑', label: 'Status', priority: 5 },
+  has_children: {
+    icon: '👨‍👩‍👧‍👦',
+    label: 'Children',
+    priority: 6,
+    format: (v: boolean, profile: any) => {
+      if (!v) return 'No children';
+      const count = profile.number_of_children;
+      const ages = profile.children_ages;
+      let text = count ? `${count} child${count > 1 ? 'ren' : ''}` : 'Has children';
+      if (ages?.length) text += ` (ages: ${ages.join(', ')})`;
+      return text;
+    }
+  },
+  employment_status: { icon: '💼', label: 'Employment', priority: 7 },
+  job_title: { icon: '👔', label: 'Role', priority: 8 },
+  industry: { icon: '🏢', label: 'Industry', priority: 9 },
+  remote_work: {
+    icon: '🌐',
+    label: 'Remote Work',
+    priority: 10,
+    format: (v: boolean) => v ? 'Can work remotely' : 'Office-based'
+  },
+  income_range: { icon: '💰', label: 'Income', priority: 11 },
+  budget_monthly: {
+    icon: '💵',
+    label: 'Monthly Budget',
+    priority: 12,
+    format: (v: number) => `$${v?.toLocaleString()}`
+  },
+  timeline: {
+    icon: '📅',
+    label: 'Timeline',
+    priority: 13,
+    format: (v: string) => {
+      const labels: Record<string, string> = {
+        'asap': 'As soon as possible',
+        '3-6months': '3-6 months',
+        '6-12months': '6-12 months',
+        '1-2years': '1-2 years',
+        'exploring': 'Just exploring'
+      };
+      return labels[v] || v;
+    }
+  },
+  relocation_motivation: {
+    icon: '🎯',
+    label: 'Motivation',
+    priority: 14,
+    format: (v: string[]) => v?.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(', ')
+  },
+  climate_preference: {
+    icon: '🌡️',
+    label: 'Climate',
+    priority: 15,
+    format: (v: string) => v?.charAt(0).toUpperCase() + v?.slice(1)
+  },
+  passport_countries: {
+    icon: '🛂',
+    label: 'Passports',
+    priority: 16,
+    format: (v: string[]) => v?.join(', ')
+  },
+  language_requirements: {
+    icon: '🗣️',
+    label: 'Languages',
+    priority: 17,
+    format: (v: string[]) => v?.join(', ')
+  },
+  has_pets: {
+    icon: '🐾',
+    label: 'Pets',
+    priority: 18,
+    format: (v: boolean, profile: any) => {
+      if (!v) return null; // Don't show if no pets
+      const types = profile.pet_types;
+      return types?.length ? types.join(', ') : 'Has pets';
+    }
+  },
+};
 
-interface UserFact {
-  category: string;
+// Hidden fields (data exists but shown via parent field)
+const HIDDEN_FIELDS = ['number_of_children', 'children_ages', 'pet_types', 'current_country_flag'];
+
+interface UserProfile {
+  [key: string]: any;
+}
+
+interface ProfileField {
+  key: string;
+  icon: string;
   label: string;
   value: string;
-  icon: string;
 }
 
-interface UserRepoInnerProps {
-  user: {
-    id: string;
-    displayName: string | null;
-  } | null;
-  sessionId: string;
-}
-
-// Get session ID
 function getSessionId(): string {
   const storageKey = 'relocation_voice_session';
   let sessionId = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
@@ -33,179 +120,108 @@ function getSessionId(): string {
   return sessionId;
 }
 
-// Category icons and labels
-const CATEGORY_CONFIG: Record<string, { icon: string; label: string; priority: number }> = {
-  location: { icon: '📍', label: 'Current Location', priority: 1 },
-  destination: { icon: '🎯', label: 'Destination', priority: 2 },
-  family: { icon: '👨‍👩‍👧‍👦', label: 'Family', priority: 3 },
-  work: { icon: '💼', label: 'Work', priority: 4 },
-  budget: { icon: '💰', label: 'Budget', priority: 5 },
-  visa: { icon: '🛂', label: 'Visa Status', priority: 6 },
-  timeline: { icon: '📅', label: 'Timeline', priority: 7 },
-  preferences: { icon: '⭐', label: 'Preferences', priority: 8 },
-  languages: { icon: '🗣️', label: 'Languages', priority: 9 },
-  other: { icon: '📋', label: 'Other', priority: 10 },
-};
+interface UserRepoInnerProps {
+  user: {
+    id: string;
+    displayName: string | null;
+  } | null;
+}
 
-function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
-  const [facts, setFacts] = useState<UserFact[]>([]);
+function UserRepoInner({ user }: UserRepoInnerProps) {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [displayFields, setDisplayFields] = useState<ProfileField[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Fetch user facts from ZEP
-  const fetchUserFacts = async () => {
+  // Fetch profile from Neon
+  const fetchProfile = useCallback(async () => {
     if (!user?.id) {
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`${GATEWAY_URL}/memory/user-facts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          session_id: sessionId,
-          app_id: APP_ID,
-        }),
-      });
+      const response = await fetch(`/api/profile/extract?user_id=${encodeURIComponent(user.id)}`);
 
       if (response.ok) {
         const data = await response.json();
 
-        // Parse and categorize facts
-        const parsedFacts: UserFact[] = [];
+        if (data.profile) {
+          setProfile(data.profile);
 
-        if (data.facts && Array.isArray(data.facts)) {
-          data.facts.forEach((fact: any) => {
-            const category = categorizesFact(fact.content || fact);
-            const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.other;
+          // Convert profile to display fields
+          const fields: ProfileField[] = [];
 
-            parsedFacts.push({
-              category,
-              label: config.label,
-              value: typeof fact === 'string' ? fact : fact.content,
+          for (const [key, config] of Object.entries(PROFILE_FIELDS)) {
+            const value = data.profile[key];
+
+            // Skip null/undefined/empty values and hidden fields
+            if (value === null || value === undefined || value === '' ||
+                (Array.isArray(value) && value.length === 0) ||
+                HIDDEN_FIELDS.includes(key)) {
+              continue;
+            }
+
+            // Format the value
+            let displayValue: string | null;
+            if (config.format) {
+              displayValue = config.format(value, data.profile);
+            } else if (typeof value === 'boolean') {
+              displayValue = value ? 'Yes' : 'No';
+            } else if (Array.isArray(value)) {
+              displayValue = value.join(', ');
+            } else {
+              displayValue = String(value);
+            }
+
+            // Skip if formatter returned null (e.g., no pets)
+            if (displayValue === null) continue;
+
+            fields.push({
+              key,
               icon: config.icon,
+              label: config.label,
+              value: displayValue,
             });
-          });
-        }
+          }
 
-        // Also check for structured data
-        if (data.location) {
-          parsedFacts.push({
-            category: 'location',
-            label: 'Current Location',
-            value: data.location,
-            icon: '📍',
+          // Sort by priority
+          fields.sort((a, b) => {
+            const aP = PROFILE_FIELDS[a.key]?.priority || 99;
+            const bP = PROFILE_FIELDS[b.key]?.priority || 99;
+            return aP - bP;
           });
-        }
-        if (data.destination) {
-          parsedFacts.push({
-            category: 'destination',
-            label: 'Interested In',
-            value: data.destination,
-            icon: '🎯',
-          });
-        }
-        if (data.family_status) {
-          parsedFacts.push({
-            category: 'family',
-            label: 'Family',
-            value: data.family_status,
-            icon: '👨‍👩‍👧‍👦',
-          });
-        }
-        if (data.work_status) {
-          parsedFacts.push({
-            category: 'work',
-            label: 'Work',
-            value: data.work_status,
-            icon: '💼',
-          });
-        }
 
-        // Sort by priority and dedupe
-        const uniqueFacts = Array.from(
-          new Map(parsedFacts.map(f => [f.value.toLowerCase(), f])).values()
-        ).sort((a, b) => {
-          const aPriority = CATEGORY_CONFIG[a.category]?.priority || 10;
-          const bPriority = CATEGORY_CONFIG[b.category]?.priority || 10;
-          return aPriority - bPriority;
-        });
-
-        setFacts(uniqueFacts);
-        setLastUpdate(new Date());
+          setDisplayFields(fields);
+          setLastUpdate(new Date());
+        }
       }
     } catch (err) {
-      console.error('[UserRepo] Failed to fetch facts:', err);
+      console.error('[UserRepo] Failed to fetch profile:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  // Categorize a fact based on keywords
-  function categorizesFact(text: string): string {
-    const lower = text.toLowerCase();
-
-    if (lower.includes('uk') || lower.includes('london') || lower.includes('live in') ||
-        lower.includes('based in') || lower.includes('from') || lower.includes('currently in')) {
-      return 'location';
-    }
-    if (lower.includes('move to') || lower.includes('relocate to') || lower.includes('interested in') ||
-        lower.includes('considering') || lower.includes('destination')) {
-      return 'destination';
-    }
-    if (lower.includes('kid') || lower.includes('child') || lower.includes('family') ||
-        lower.includes('spouse') || lower.includes('partner') || lower.includes('married') ||
-        lower.includes('single')) {
-      return 'family';
-    }
-    if (lower.includes('job') || lower.includes('work') || lower.includes('career') ||
-        lower.includes('remote') || lower.includes('employed') || lower.includes('freelance') ||
-        lower.includes('business') || lower.includes('entrepreneur')) {
-      return 'work';
-    }
-    if (lower.includes('budget') || lower.includes('salary') || lower.includes('income') ||
-        lower.includes('afford') || lower.includes('cost') || lower.includes('money')) {
-      return 'budget';
-    }
-    if (lower.includes('visa') || lower.includes('passport') || lower.includes('citizenship') ||
-        lower.includes('residency') || lower.includes('permit')) {
-      return 'visa';
-    }
-    if (lower.includes('when') || lower.includes('timeline') || lower.includes('planning') ||
-        lower.includes('month') || lower.includes('year') || lower.includes('soon')) {
-      return 'timeline';
-    }
-    if (lower.includes('language') || lower.includes('speak') || lower.includes('fluent')) {
-      return 'languages';
-    }
-    if (lower.includes('prefer') || lower.includes('want') || lower.includes('need') ||
-        lower.includes('important') || lower.includes('looking for')) {
-      return 'preferences';
-    }
-
-    return 'other';
-  }
-
-  // Fetch on mount and periodically
+  // Fetch on mount and listen for updates
   useEffect(() => {
-    fetchUserFacts();
+    fetchProfile();
 
-    // Poll every 10 seconds for updates
-    const interval = setInterval(fetchUserFacts, 10000);
-    return () => clearInterval(interval);
-  }, [user?.id, sessionId]);
+    // Poll every 5 seconds for updates
+    const interval = setInterval(fetchProfile, 5000);
 
-  // Listen for custom events from voice conversation
-  useEffect(() => {
-    const handleNewFact = () => {
-      fetchUserFacts();
+    // Listen for extraction events
+    const handleExtraction = () => {
+      setTimeout(fetchProfile, 500); // Small delay for DB write
     };
 
-    window.addEventListener('userFactLearned', handleNewFact);
-    return () => window.removeEventListener('userFactLearned', handleNewFact);
-  }, []);
+    window.addEventListener('profileExtracted', handleExtraction);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('profileExtracted', handleExtraction);
+    };
+  }, [fetchProfile]);
 
   if (!user) {
     return (
@@ -235,7 +251,7 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
           borderRadius: '50%',
           animation: 'spin 1s linear infinite',
         }} />
-        <p style={{ color: '#64748b', fontSize: '13px' }}>Loading your profile...</p>
+        <p style={{ color: '#64748b', fontSize: '13px' }}>Loading profile...</p>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -269,13 +285,13 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
             {user.displayName || 'Your Profile'}
           </p>
           <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
-            Learned from conversation
+            Built from conversation
           </p>
         </div>
       </div>
 
-      {/* Facts */}
-      {facts.length === 0 ? (
+      {/* Profile Fields */}
+      {displayFields.length === 0 ? (
         <div style={{
           padding: '20px',
           background: '#f8fafc',
@@ -284,7 +300,7 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
         }}>
           <div style={{ fontSize: '28px', marginBottom: '8px' }}>💬</div>
           <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-            Start chatting! I'll learn about you as we talk.
+            Start chatting! Your profile builds as we talk.
           </p>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
             Try: "I live in the UK with my family"
@@ -292,9 +308,9 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {facts.map((fact, i) => (
+          {displayFields.map((field) => (
             <div
-              key={i}
+              key={field.key}
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -305,24 +321,25 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
                 borderLeft: '3px solid #667eea',
               }}
             >
-              <span style={{ fontSize: '16px' }}>{fact.icon}</span>
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>{field.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  fontSize: '11px',
+                  fontSize: '10px',
                   color: '#64748b',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
                   margin: '0 0 2px 0',
                 }}>
-                  {fact.label}
+                  {field.label}
                 </p>
                 <p style={{
                   fontSize: '13px',
                   color: '#1a202c',
                   margin: 0,
                   lineHeight: 1.4,
+                  wordBreak: 'break-word',
                 }}>
-                  {fact.value}
+                  {field.value}
                 </p>
               </div>
             </div>
@@ -330,13 +347,31 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
         </div>
       )}
 
+      {/* Completion indicator */}
+      {displayFields.length > 0 && (
+        <div style={{
+          marginTop: '16px',
+          padding: '12px',
+          background: 'linear-gradient(135deg, #667eea10, #764ba210)',
+          borderRadius: '8px',
+          textAlign: 'center',
+        }}>
+          <p style={{ fontSize: '11px', color: '#667eea', margin: 0, fontWeight: 500 }}>
+            {displayFields.length} of ~15 profile fields discovered
+          </p>
+          <p style={{ fontSize: '10px', color: '#94a3b8', margin: '4px 0 0 0' }}>
+            Keep chatting to build more!
+          </p>
+        </div>
+      )}
+
       {/* Last updated */}
-      {lastUpdate && facts.length > 0 && (
+      {lastUpdate && (
         <p style={{
           fontSize: '10px',
           color: '#94a3b8',
           textAlign: 'center',
-          marginTop: '12px',
+          marginTop: '8px',
         }}>
           Updated {lastUpdate.toLocaleTimeString()}
         </p>
@@ -348,7 +383,6 @@ function UserRepoInner({ user, sessionId }: UserRepoInnerProps) {
 // Wrapper with Stack Auth
 function UserRepoWithAuth() {
   const user = useUser();
-  const [sessionId] = useState(() => getSessionId());
 
   return (
     <UserRepoInner
@@ -356,7 +390,6 @@ function UserRepoWithAuth() {
         id: user.id,
         displayName: user.displayName,
       } : null}
-      sessionId={sessionId}
     />
   );
 }

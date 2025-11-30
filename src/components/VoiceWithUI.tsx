@@ -147,6 +147,31 @@ function CombinedInterface({ accessToken, sessionId, userId }: CombinedInterface
   const isConnected = status.value === 'connected';
   const isConnecting = status.value === 'connecting';
 
+  // Extract profile data from conversation
+  const extractProfile = async (context: Array<{ role: string; content: string }>) => {
+    if (!userId || context.length < 2) return; // Need at least one exchange
+
+    try {
+      const response = await fetch('/api/profile/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          app_id: 'relocation',
+          messages: context.slice(-10), // Last 5 exchanges
+          session_id: sessionId,
+        }),
+      });
+
+      if (response.ok) {
+        // Dispatch event for UserRepo to refresh
+        window.dispatchEvent(new CustomEvent('profileExtracted'));
+      }
+    } catch (err) {
+      console.error('[VoiceWithUI] Profile extraction error:', err);
+    }
+  };
+
   // Fetch related content from gateway
   const fetchRelatedContent = async (query: string, context: Array<{ role: string; content: string }>) => {
     try {
@@ -202,6 +227,8 @@ function CombinedInterface({ accessToken, sessionId, userId }: CombinedInterface
       setLastQuery(latestUserQuery);
       generateUI(latestUserQuery, processed);
       fetchRelatedContent(latestUserQuery, processed);
+      // Extract profile data (runs in background)
+      extractProfile(processed);
     }
   }, [messages]);
 
