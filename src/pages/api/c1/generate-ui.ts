@@ -78,14 +78,35 @@ export const POST: APIRoute = async ({ request }) => {
     let dataContext = '';
 
     if (relatedData) {
-      // Articles with images
+      // Articles with images - provide default images based on content
       if (relatedData.articles?.length > 0) {
-        dataContext += '\n## Available Articles (use these to create article cards with images):\n';
+        dataContext += '\n## ARTICLES - Display these as cards WITH IMAGES:\n';
         relatedData.articles.forEach((a: any, i: number) => {
-          dataContext += `${i + 1}. "${a.title}" - ${a.url}`;
-          if (a.image_url) dataContext += ` [image: ${a.image_url}]`;
-          if (a.excerpt) dataContext += `\n   Summary: ${a.excerpt}`;
-          dataContext += '\n';
+          // Find a relevant image based on article content
+          let imageUrl = a.image_url;
+          if (!imageUrl) {
+            const titleLower = (a.title || '').toLowerCase();
+            if (titleLower.includes('portugal') || titleLower.includes('lisbon')) {
+              imageUrl = 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=400';
+            } else if (titleLower.includes('spain') || titleLower.includes('barcelona') || titleLower.includes('madrid')) {
+              imageUrl = 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=400';
+            } else if (titleLower.includes('thailand') || titleLower.includes('bangkok')) {
+              imageUrl = 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=400';
+            } else if (titleLower.includes('dubai') || titleLower.includes('uae')) {
+              imageUrl = 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400';
+            } else if (titleLower.includes('digital nomad') || titleLower.includes('remote')) {
+              imageUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400';
+            } else if (titleLower.includes('visa') || titleLower.includes('passport')) {
+              imageUrl = 'https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=400';
+            } else {
+              imageUrl = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400';
+            }
+          }
+          dataContext += `\nARTICLE ${i + 1}:\n`;
+          dataContext += `  Title: "${a.title}"\n`;
+          dataContext += `  URL: ${a.url}\n`;
+          dataContext += `  Image: ${imageUrl}\n`;
+          if (a.excerpt) dataContext += `  Summary: ${a.excerpt}\n`;
         });
       }
 
@@ -125,49 +146,71 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Build the system prompt for generating beautiful UI
-    const systemPrompt = `You are a UI generator for Relocation.Quest, a platform helping people move abroad.
-Your job is to create beautiful, interactive UI components based on the user's voice query.
+    const systemPrompt = `You are a generative UI assistant for Relocation.Quest. Generate RICH, VISUAL UI components - NOT plain text responses.
 
-${zepContext ? `## User Context from Memory:\n${zepContext}\n` : ''}
+${zepContext ? `## User Memory:\n${zepContext}\n` : ''}
 
 ${dataContext}
 
-## UI Generation Guidelines:
+## YOU MUST generate these visual components:
 
-1. **Article Cards**: When showing articles, use attractive cards with:
-   - Title with link
-   - Featured image if available
-   - Short excerpt
-   - Read time or category badge
+### 1. ARTICLE CARDS (when articles available):
+\`\`\`
+<article-card>
+  <image src="[article_image_url]" alt="[title]" />
+  <title>[Article Title]</title>
+  <excerpt>[2-3 sentence summary]</excerpt>
+  <link href="[url]">Read Guide →</link>
+</article-card>
+\`\`\`
 
-2. **Cost Comparison Charts**: When discussing costs, create:
-   - Bar charts comparing cities/countries
-   - Monthly budget breakdowns
-   - Visual comparisons with current location
+### 2. COUNTRY INFO CARD:
+\`\`\`
+<country-card>
+  <flag>[emoji flag]</flag>
+  <name>[Country Name]</name>
+  <stats>
+    <stat label="Cost of Living">$X,XXX/month</stat>
+    <stat label="Visa Options">X types</stat>
+    <stat label="Language">English</stat>
+  </stats>
+</country-card>
+\`\`\`
 
-3. **Country Info Cards**: For country queries, show:
-   - Country flag and name
-   - Key facts in a grid
-   - Visa requirements summary
-   - Quality of life indicators
+### 3. COMPARISON CHART (for costs/data):
+\`\`\`
+<bar-chart title="Monthly Cost Comparison">
+  <bar label="London" value="3500" color="blue" />
+  <bar label="Lisbon" value="2100" color="green" />
+  <bar label="Bangkok" value="1200" color="orange" />
+</bar-chart>
+\`\`\`
 
-4. **Fact Panels**: Display facts in:
-   - Organized sections by category
-   - Bullet points with icons
-   - Highlighted key statistics
+### 4. FACT LIST:
+\`\`\`
+<fact-list title="Key Facts">
+  <fact icon="📍">Location fact</fact>
+  <fact icon="💰">Cost fact</fact>
+  <fact icon="🛂">Visa fact</fact>
+</fact-list>
+\`\`\`
 
-5. **Action Items**: Include:
-   - Next steps the user can take
-   - Links to relevant guides
-   - Save/bookmark buttons
+### 5. ACTION BUTTONS:
+\`\`\`
+<actions>
+  <button href="/guides/portugal">View Full Guide</button>
+  <button variant="secondary">Save to Profile</button>
+</actions>
+\`\`\`
 
-## Important:
-- Generate rich, interactive UI - not just text
-- Use the data provided to populate real information
-- Make it visually appealing for someone planning relocation
-- Include images when URLs are available
-- Create charts for numerical comparisons
-- Always include actionable next steps`;
+## CRITICAL RULES:
+- ALWAYS use image URLs when available in the data
+- Create VISUAL layouts, not paragraphs of text
+- Use real data from the context provided
+- Include multiple component types for rich UX
+- End with actionable next steps
+
+Generate the UI now based on: "${query}"`;
 
     // Build messages for C1
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -184,10 +227,10 @@ ${dataContext}
       });
     }
 
-    // Add the current query
+    // Add the current query - keep it simple, system prompt has all instructions
     messages.push({
       role: 'user',
-      content: `Generate a beautiful, informative UI panel for this voice query: "${query}"\n\nUse the data provided to create visually rich components with real information. Include article cards, charts, facts, and actionable next steps.`,
+      content: query,
     });
 
     // Call C1 API with streaming (using Haiku for cost efficiency)

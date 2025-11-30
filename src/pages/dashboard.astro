@@ -2,6 +2,7 @@
 import SEO from '../components/SEO.astro';
 import VoiceWithUI from '../components/VoiceWithUI';
 import UserIndicator from '../components/UserIndicator';
+import UserRepo from '../components/UserRepo';
 
 export const prerender = false;
 ---
@@ -289,11 +290,8 @@ export const prerender = false;
 
     <div class="sidebar">
       <div class="sidebar-card">
-        <h3>Recent Conversations</h3>
-        <div class="empty-state">
-          <div class="empty-state-icon">💬</div>
-          <p>Your conversation history will appear here</p>
-        </div>
+        <h3>Your Profile</h3>
+        <UserRepo client:only="react" />
       </div>
 
       <div class="sidebar-card">
