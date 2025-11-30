@@ -107,6 +107,29 @@ const topicClusterResult = await sql`
 `;
 const topicArticles = topicClusterResult || [];
 
+// Fetch recent articles for ticker tape
+const tickerArticlesResult = await sql`
+  SELECT slug, title, published_at, created_at, article_mode
+  FROM articles
+  WHERE (country_code = ${hub.country_code} OR cluster_id = ${hub.cluster_id})
+    AND app = 'relocation'
+    AND published_at IS NOT NULL
+  ORDER BY COALESCE(published_at, created_at) DESC
+  LIMIT 20
+`;
+const tickerArticles = tickerArticlesResult || [];
+
+// Format date for ticker
+function formatTickerDate(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 // Parse hub payload
 let hubPayload: any = {};
 try {
@@ -137,6 +160,15 @@ const quickStats = [
 
 // Playback ID from hub or primary article
 const playbackId = hub.video_playback_id || clusterArticles.find((a: any) => a.is_primary)?.video_playback_id;
+
+// Scenic background for fallback hero (use YOLO or Story video from Act 4)
+function getScenicBackground(): string {
+  const yoloVideo = clusterArticles.find((a: any) => a.article_mode === 'yolo')?.video_playback_id;
+  const storyVideo = clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id;
+  const videoId = yoloVideo || storyVideo;
+  return videoId ? getMuxThumbnail(videoId, 10.5, 1920) : '';
+}
+const scenicBgUrl = getScenicBackground();
 
 // Mux helpers
 function getMuxThumbnail(id: string, time: number = 5, width: number = 800) {
@@ -214,6 +246,28 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       transform: translateY(-4px);
       box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15);
     }
+
+    /* Ticker Tape */
+    .ticker-wrapper {
+      overflow: hidden;
+      background: linear-gradient(90deg, #1f2937 0%, #111827 50%, #1f2937 100%);
+    }
+    .ticker-track {
+      display: flex;
+      animation: ticker-scroll 60s linear infinite;
+    }
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      flex-shrink: 0;
+      padding: 0 2rem;
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -234,6 +288,29 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       </div>
     </div>
   </nav>
+
+  <!-- Ticker Tape -->
+  {tickerArticles.length > 0 && (
+    <div class="ticker-wrapper py-2">
+      <div class="ticker-track">
+        {/* Duplicate for seamless loop */}
+        {[...tickerArticles, ...tickerArticles].map((article: any) => {
+          const pubDate = article.published_at || article.created_at;
+          const modeEmoji = article.article_mode === 'story' ? '📖' :
+                           article.article_mode === 'guide' ? '📋' :
+                           article.article_mode === 'yolo' ? '🚀' :
+                           article.article_mode === 'voices' ? '💬' : '📝';
+          return (
+            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
+              <span class="text-amber-500">{modeEmoji}</span>
+              <span class="font-medium">{article.title}</span>
+              <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  )}
 
   <!-- Hero Section with Video -->
   {playbackId ? (
@@ -281,8 +358,14 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       </div>
     </header>
   ) : (
-    <header class="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-16">
-      <div class="max-w-4xl mx-auto px-4">
+    <header
+      class="relative text-white py-20"
+      style={scenicBgUrl
+        ? `background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('${scenicBgUrl}'); background-size: cover; background-position: center;`
+        : 'background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);'
+      }
+    >
+      <div class="max-w-4xl mx-auto px-4 relative z-10">
         <div class="flex items-center space-x-2 text-white/70 text-sm mb-6">
           <a href="/" class="hover:text-white">Home</a>
           <span>›</span>
@@ -291,11 +374,11 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
           <span class="text-white">{hub.location_name}</span>
         </div>
         <div class="flex items-center gap-6">
-          <span class="text-7xl">{country?.flag_emoji || '🌍'}</span>
+          <span class="text-7xl drop-shadow-lg">{country?.flag_emoji || '🌍'}</span>
           <div>
-            <h1 class="text-4xl md:text-5xl font-bold">{hub.title}</h1>
+            <h1 class="text-4xl md:text-5xl font-bold drop-shadow-lg">{hub.title}</h1>
             {country && (
-              <p class="text-xl text-white/80 mt-2">{country.region} • {country.capital}</p>
+              <p class="text-xl text-white/90 mt-2 drop-shadow">{country.region} • {country.capital}</p>
             )}
           </div>
         </div>
