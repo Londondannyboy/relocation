@@ -484,12 +484,28 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </section>
   )}
 
-  <!-- Main Hub Content with Embedded Videos -->
+  <!-- Main Hub Content with Embedded Videos Spaced Throughout -->
   <main class="max-w-4xl mx-auto px-4 py-12">
 
-    <!-- Guide Video Section - Practical Steps -->
+    <!-- Hub Content - Split into sections with videos between -->
+    {hub.hub_content && (() => {
+      // Split content by major headers (##) to insert videos between sections
+      const sections = hub.hub_content.split(/(?=## )/);
+      const introSection = sections[0] || '';
+      const middleSections = sections.slice(1, Math.ceil(sections.length / 2)).join('');
+      const lateSections = sections.slice(Math.ceil(sections.length / 2)).join('');
+
+      return null; // We'll render manually below
+    })()}
+
+    <!-- Intro Content -->
+    {hub.hub_content && (
+      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/)[0] || ''} />
+    )}
+
+    <!-- Guide Video Section - After intro, before main content -->
     {videosByMode.guide?.playbackId && (
-      <section class="my-8 -mx-4 px-4">
+      <section class="my-12 -mx-4 px-4">
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="text-2xl">📋</span>
@@ -510,12 +526,16 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       </section>
     )}
 
-    <!-- Hub Content (generated HTML) -->
-    {hub.hub_content && (
-      <div class="prose max-w-none" set:html={hub.hub_content} />
+    <!-- Middle Content Sections -->
+    {hub.hub_content && (() => {
+      const sections = hub.hub_content.split(/(?=## )/);
+      const middleSections = sections.slice(1, Math.ceil(sections.length / 2)).join('');
+      return middleSections;
+    })() && (
+      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/).slice(1, Math.ceil(hub.hub_content.split(/(?=## )/).length / 2)).join('')} />
     )}
 
-    <!-- YOLO Video Section - Lifestyle & Adventure -->
+    <!-- YOLO Video Section - Middle of content -->
     {videosByMode.yolo?.playbackId && (
       <section class="my-12 -mx-4 px-4">
         <div class="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6">
@@ -538,7 +558,12 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       </section>
     )}
 
-    <!-- Voices Video Section - Real Expat Stories -->
+    <!-- Late Content Sections -->
+    {hub.hub_content && (
+      <div class="prose max-w-none" set:html={hub.hub_content.split(/(?=## )/).slice(Math.ceil(hub.hub_content.split(/(?=## )/).length / 2)).join('')} />
+    )}
+
+    <!-- Voices Video Section - Near end before topic articles -->
     {videosByMode.voices?.playbackId && (
       <section class="my-12 -mx-4 px-4">
         <div class="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-6">
@@ -557,35 +582,6 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
           <a href={`/${videosByMode.voices.slug}`} class="inline-flex items-center gap-2 text-purple-600 font-medium mt-2 hover:text-purple-700">
             Hear more stories →
           </a>
-        </div>
-      </section>
-    )}
-
-    <!-- Visual Break: Video Perspectives Grid -->
-    {clusterArticles.length >= 2 && (
-      <section class="my-12 bg-gradient-to-r from-amber-50 to-orange-50 -mx-4 px-4 py-8 rounded-2xl">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">See {hub.location_name} Through Different Lenses</h3>
-        <div class="grid grid-cols-2 gap-4">
-          {clusterArticles.slice(0, 4).map((article: any, i: number) => {
-            const config = modeConfig[article.article_mode] || modeConfig.story;
-            // Each video gets a different act time for visual variety
-            const actTimes = [2, 5, 8, 11];
-            return (
-              <a href={`/${article.slug}`} class="group relative rounded-xl overflow-hidden">
-                <img
-                  src={getMuxThumbnail(article.video_playback_id, actTimes[i], 500)}
-                  alt={config.label}
-                  class="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
-                  <div>
-                    <span class="text-white text-2xl">{config.icon}</span>
-                    <span class="text-white font-semibold ml-2">{config.label}</span>
-                  </div>
-                </div>
-              </a>
-            );
-          })}
         </div>
       </section>
     )}
