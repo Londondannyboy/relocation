@@ -144,22 +144,11 @@ interface VoiceInterfaceProps {
   configId: string;
 }
 
-interface CategoryData {
-  icon: string;
-  color: string;
-  label: string;
-  facts: string[];
-  links: Array<{ title: string; url?: string; type: string }>;
-}
-
+// Simplified related content - just articles with links
 interface RelatedContent {
-  articles: Array<{ title: string; short_title?: string; url: string; excerpt?: string; type?: string }>;
-  companies: Array<{ name: string; url: string; description?: string; services?: string[] }>;
-  countries: Array<{ name: string; flag?: string; url: string; region?: string; capital?: string; highlights?: string[] }>;
-  external: Array<{ title: string; url?: string; description?: string; type?: string }>;
-  categorized_facts?: Record<string, CategoryData>;
+  articles: Array<{ title: string; url: string; type?: string }>;
+  destination_country?: string;
   topics?: string[];
-  country?: string;
 }
 
 // Parse links from assistant response (format: "text\n\n---LINKS---\n{json}")
@@ -242,27 +231,19 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         const data = await response.json();
         console.log('[VoiceInterface] Related content response:', JSON.stringify(data).slice(0, 500));
 
-        // Always update with fresh data
+        // Simple structure: just articles with links
         const newContent: RelatedContent = {
           articles: data.articles || [],
-          companies: data.companies || [],
-          countries: data.countries || [],
-          external: data.external || [],
-          categorized_facts: data.categorized_facts || {},
-          topics: data.topics || [],
-          country: data.country
+          destination_country: data.destination_country,
+          topics: data.topics || []
         };
 
-        // Check if we have any categorized facts
-        const hasContent = Object.keys(newContent.categorized_facts || {}).length > 0 ||
-                          newContent.articles.length > 0 ||
-                          newContent.countries.length > 0;
-
-        if (hasContent) {
+        // Only show if we have articles
+        if (newContent.articles.length > 0) {
           console.log('[VoiceInterface] Setting related content:', newContent);
           setRelatedContent(newContent);
           setIsNewContent(true);
-          setTimeout(() => setIsNewContent(false), 2000); // Reset animation after 2s
+          setTimeout(() => setIsNewContent(false), 2000);
         }
       }
     } catch (err) {
@@ -501,8 +482,8 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                 >
                   {msg.content}
                 </div>
-                {/* Inline links for assistant messages - only show if URL exists */}
-                {msg.role === 'assistant' && msg.links && (
+                {/* Inline article links for assistant messages */}
+                {msg.role === 'assistant' && msg.links?.articles && msg.links.articles.length > 0 && (
                   <div style={{
                     maxWidth: '80%',
                     marginTop: '8px',
@@ -510,32 +491,10 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                     flexWrap: 'wrap',
                     gap: '6px',
                   }}>
-                    {msg.links.countries?.filter(c => c.url).map((c, idx) => (
-                      <a
-                        key={`country-${idx}`}
-                        href={c.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '4px 10px',
-                          background: 'rgba(102,126,234,0.3)',
-                          borderRadius: '12px',
-                          textDecoration: 'none',
-                          color: '#a5b4fc',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                        }}
-                      >
-                        {c.flag || '🌍'} {c.name}
-                      </a>
-                    ))}
-                    {msg.links.articles?.filter(a => a.url).slice(0, 3).map((a, idx) => (
+                    {msg.links.articles.slice(0, 3).map((article, idx) => (
                       <a
                         key={`article-${idx}`}
-                        href={a.url}
+                        href={article.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
@@ -550,28 +509,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                           fontSize: '12px',
                         }}
                       >
-                        📄 {a.short_title || (a.title.length > 25 ? a.title.slice(0, 22) + '...' : a.title)}
-                      </a>
-                    ))}
-                    {msg.links.companies?.filter(co => co.url).slice(0, 2).map((co, idx) => (
-                      <a
-                        key={`company-${idx}`}
-                        href={co.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '4px 10px',
-                          background: 'rgba(118,75,162,0.3)',
-                          borderRadius: '12px',
-                          textDecoration: 'none',
-                          color: '#d8b4fe',
-                          fontSize: '12px',
-                        }}
-                      >
-                        🏢 {co.name}
+                        📄 {article.title.length > 30 ? article.title.slice(0, 27) + '...' : article.title}
                       </a>
                     ))}
                   </div>
@@ -659,185 +597,78 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         </div>
       )}
 
-      {/* Categorized Facts Panel - News Feed Style */}
-      {relatedContent?.categorized_facts && Object.keys(relatedContent.categorized_facts).length > 0 && (
+      {/* Simple Article Links Panel */}
+      {relatedContent?.articles && relatedContent.articles.length > 0 && (
         <div style={{
           padding: '0 24px 24px',
           animation: isNewContent ? 'pulse 0.5s ease-out' : undefined,
         }}>
-          {/* Header with country if detected */}
+          {/* Header */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px',
+            gap: '8px',
+            marginBottom: '12px',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px' }}>📡</span>
-              <span style={{
-                color: '#a5b4fc',
-                fontSize: '12px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                fontWeight: 600,
-              }}>
-                Live Intelligence
-              </span>
-            </div>
+            <span style={{ fontSize: '16px' }}>📚</span>
+            <span style={{
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}>
+              Related Guides
+              {relatedContent.destination_country && ` - ${relatedContent.destination_country}`}
+            </span>
             {isNewContent && (
               <span style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: '#10b981',
                 color: 'white',
                 fontSize: '10px',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontWeight: 600,
-                animation: 'fadeIn 0.3s ease-out',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                marginLeft: 'auto',
               }}>
-                ✨ NEW
+                NEW
               </span>
             )}
           </div>
 
-          {/* Country banner if detected */}
-          {relatedContent.country && (
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3))',
-              borderRadius: '12px',
-              padding: '12px 16px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              border: '1px solid rgba(165,180,252,0.3)',
-            }}>
-              <span style={{ fontSize: '24px' }}>🌍</span>
-              <div>
-                <div style={{ color: 'white', fontWeight: 600, fontSize: '15px' }}>
-                  {relatedContent.country} Insights
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
-                  {relatedContent.topics?.join(' • ')}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Categorized fact cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {Object.entries(relatedContent.categorized_facts).map(([key, category]) => (
-              <div
-                key={key}
+          {/* Simple article list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {relatedContent.articles.map((article, i) => (
+              <a
+                key={i}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  borderLeft: `4px solid ${category.color}`,
-                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  display: 'block',
+                  padding: '12px 16px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  color: 'white',
+                  fontSize: '14px',
+                  transition: 'background 0.2s',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                 }}
               >
-                {/* Category header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '12px',
+                <span style={{ marginRight: '8px' }}>📄</span>
+                {article.title}
+                <span style={{
+                  float: 'right',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '12px'
                 }}>
-                  <span style={{ fontSize: '18px' }}>{category.icon}</span>
-                  <span style={{
-                    color: category.color,
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                  }}>
-                    {category.label}
-                  </span>
-                </div>
-
-                {/* Facts/Topics */}
-                {category.facts.length > 0 && (
-                  <div style={{ marginBottom: category.links.filter(l => l.url).length > 0 ? '16px' : 0 }}>
-                    <div style={{
-                      color: 'rgba(255,255,255,0.5)',
-                      fontSize: '10px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      marginBottom: '8px',
-                    }}>
-                      📌 Key Facts
-                    </div>
-                    {category.facts.map((fact, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          color: 'white',
-                          fontSize: '14px',
-                          lineHeight: 1.6,
-                          padding: '8px 0',
-                          borderBottom: i < category.facts.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                        }}
-                      >
-                        {fact}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Resource Links - only show if URL exists */}
-                {category.links.filter(l => l.url).length > 0 && (
-                  <div>
-                    <div style={{
-                      color: 'rgba(255,255,255,0.5)',
-                      fontSize: '10px',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      marginBottom: '8px',
-                    }}>
-                      🔗 Resources
-                    </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {category.links.filter(link => link.url).slice(0, 4).map((link, i) => {
-                      const isExternal = link.type === 'external';
-                      return (
-                        <a
-                          key={i}
-                          href={link.url!}
-                          target={isExternal || link.url!.startsWith('http') ? '_blank' : undefined}
-                          rel={isExternal || link.url!.startsWith('http') ? 'noopener noreferrer' : undefined}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: isExternal ? '8px 14px' : '6px 12px',
-                            background: isExternal
-                              ? 'linear-gradient(135deg, rgba(251,191,36,0.3), rgba(245,158,11,0.3))'
-                              : `${category.color}33`,
-                            border: isExternal
-                              ? '2px solid rgba(251,191,36,0.6)'
-                              : `1px solid ${category.color}55`,
-                            borderRadius: isExternal ? '12px' : '20px',
-                            textDecoration: 'none',
-                            color: isExternal ? '#fbbf24' : 'white',
-                            fontSize: '12px',
-                            fontWeight: isExternal ? 600 : 500,
-                            transition: 'all 0.2s',
-                            boxShadow: isExternal ? '0 2px 8px rgba(251,191,36,0.2)' : 'none',
-                          }}
-                        >
-                          {link.type === 'article' && '📄'}
-                          {link.type === 'company' && '🏢'}
-                          {link.type === 'country' && '🗺️'}
-                          {isExternal && '🌐'}
-                          {link.title}
-                          {isExternal && <span style={{ fontSize: '10px', opacity: 0.8 }}>↗</span>}
-                        </a>
-                      );
-                    })}
-                  </div>
-                  </div>
-                )}
-              </div>
+                  ↗
+                </span>
+              </a>
             ))}
           </div>
 
@@ -847,10 +678,6 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
               0% { opacity: 0.7; transform: scale(0.98); }
               50% { opacity: 1; transform: scale(1.01); }
               100% { opacity: 1; transform: scale(1); }
-            }
-            @keyframes fadeIn {
-              from { opacity: 0; transform: translateY(-5px); }
-              to { opacity: 1; transform: translateY(0); }
             }
           `}</style>
         </div>
