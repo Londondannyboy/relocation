@@ -1,12 +1,10 @@
 ---
 // Stack Auth handler - serves out-of-the-box sign-in/sign-up pages
-// Routes: /handler/sign-in, /handler/sign-up, /handler/sign-out, etc.
+// Routes: /handler/sign-in, /handler/sign-up, /handler/sign-out, /handler/oauth-callback, etc.
 
 import StackAuthHandler from '../../components/StackAuthHandler';
 
 export const prerender = false;
-
-const path = Astro.url.pathname;
 ---
 
 <!DOCTYPE html>
@@ -25,6 +23,6 @@ const path = Astro.url.pathname;
     </style>
 </head>
 <body>
-    <StackAuthHandler path={path} client:only="react" />
+    <StackAuthHandler client:only="react" />
 </body>
 </html>

@@ -333,22 +333,23 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         {displayMessages.length === 0 ? (
           <div style={emptyStateStyle}>
             <div style={{
-              width: '64px',
-              height: '64px',
-              marginBottom: '16px',
+              width: '72px',
+              height: '72px',
+              marginBottom: '20px',
               borderRadius: '50%',
-              background: 'rgba(255, 255, 255, 0.1)',
+              background: 'linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              border: '2px solid rgba(102,126,234,0.4)',
             }}>
-              <svg style={{ width: '32px', height: '32px', color: 'rgba(255,255,255,0.4)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg style={{ width: '36px', height: '36px', color: '#a5b4fc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </div>
-            <p style={{ marginBottom: '8px' }}>Press the microphone to start</p>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)' }}>
-              Ask about visa requirements, cost of living, or relocation tips
+            <p style={{ marginBottom: '8px', fontWeight: 600, fontSize: '16px' }}>Welcome to Relocation Quest!</p>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+              Press the microphone and ask about visas, cost of living, or moving abroad.
             </p>
           </div>
         ) : (

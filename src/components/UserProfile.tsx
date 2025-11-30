@@ -1,5 +1,5 @@
 import { StackProvider, StackTheme, useUser, UserButton } from "@stackframe/react";
-import { stackClientApp } from "../lib/stack";
+import { stackClientApp } from "../stack/client";
 
 function ProfileContent() {
   const user = useUser();
