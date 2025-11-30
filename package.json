@@ -21,6 +21,7 @@
     "@stackframe/stack": "^2.8.51",
     "@tailwindcss/typography": "^0.5.19",
     "astro": "^5.15.4",
+    "hume": "^0.15.7",
     "marked": "^17.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

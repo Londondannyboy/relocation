@@ -32,6 +32,9 @@ importers:
       astro:
         specifier: ^5.15.4
         version: 5.15.6(@types/node@24.10.1)(@vercel/functions@2.2.13(@aws-sdk/credential-provider-web-identity@3.931.0))(jiti@1.21.7)(rollup@4.53.2)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+      hume:
+        specifier: ^0.15.7
+        version: 0.15.7
       marked:
         specifier: ^17.0.0
         version: 17.0.0
@@ -2430,6 +2433,11 @@ packages:
 
   hume@0.15.4:
     resolution: {integrity: sha512-YSAAhCTpx8XaCPKCxpfmqydbqIRAxLc3c68Hht5nv+MmyMMmL6BffYVKO5nMff5BL1jWUKfOrg3MHOM9cqM5Mw==}
+    engines: {node: '>=18.0.0'}
+    deprecated: Do not use, improperly authorized client
+
+  hume@0.15.7:
+    resolution: {integrity: sha512-cEQKhkChz8AJGVfvXQ5DPpd8L30TCNYBjy2onpg74siTnx0KrzIjHt2my10oz2/rVeH4u0vvXKJbiIuKGfwkKw==}
     engines: {node: '>=18.0.0'}
 
   import-meta-resolve@4.2.0:
@@ -6606,6 +6614,15 @@ snapshots:
       toidentifier: 1.0.1
 
   hume@0.15.4:
+    dependencies:
+      uuid: 9.0.1
+      ws: 8.18.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  hume@0.15.7:
     dependencies:
       uuid: 9.0.1
       ws: 8.18.3

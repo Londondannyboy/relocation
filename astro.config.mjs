@@ -20,9 +20,8 @@ export default defineConfig({
   },
   vite: {
     ssr: {
-      // Handle SSR bundling
-      noExternal: ['@humeai/voice-react'],
-      external: ['hume']
+      // Handle SSR bundling - include hume packages
+      noExternal: ['@humeai/voice-react', 'hume']
     },
     resolve: {
       alias: {
@@ -32,13 +31,7 @@ export default defineConfig({
     },
     optimizeDeps: {
       // Exclude server-only packages from client-side bundling
-      exclude: ['@getzep/zep-cloud', 'hume']
-    },
-    build: {
-      rollupOptions: {
-        // Externalize Node.js built-ins that hume tries to use
-        external: ['stream', 'fs', 'path']
-      }
+      exclude: ['@getzep/zep-cloud']
     }
   }
 });
