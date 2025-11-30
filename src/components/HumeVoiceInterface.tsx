@@ -121,8 +121,6 @@ export default function HumeVoiceInterface({
   // Connected - render VoiceProvider
   return (
     <VoiceProvider
-      auth={{ type: 'accessToken', value: accessToken }}
-      configId={configId}
       onMessage={(message) => {
         console.log('[Hume] Message:', message);
       }}
@@ -130,7 +128,7 @@ export default function HumeVoiceInterface({
         console.error('[Hume] Error:', err);
       }}
     >
-      <VoiceInterface />
+      <VoiceInterface accessToken={accessToken} configId={configId} />
     </VoiceProvider>
   );
 }
@@ -140,8 +138,13 @@ interface Message {
   content: string;
 }
 
+interface VoiceInterfaceProps {
+  accessToken: string;
+  configId: string;
+}
+
 // Inner component that uses Hume hooks
-function VoiceInterface() {
+function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -157,6 +160,8 @@ function VoiceInterface() {
   // Log when component mounts
   useEffect(() => {
     console.log('[VoiceInterface] Component mounted, initial status:', status.value);
+    console.log('[VoiceInterface] accessToken length:', accessToken?.length);
+    console.log('[VoiceInterface] configId:', configId);
   }, []);
 
   // Process Hume messages into display format
@@ -192,9 +197,12 @@ function VoiceInterface() {
       console.log('[VoiceInterface] Disconnecting...');
       disconnect();
     } else {
-      console.log('[VoiceInterface] Attempting to connect...');
+      console.log('[VoiceInterface] Attempting to connect with config:', configId);
       try {
-        await connect();
+        await connect({
+          auth: { type: 'accessToken', value: accessToken },
+          configId: configId,
+        });
         console.log('[VoiceInterface] Connect resolved');
       } catch (err) {
         console.error('[VoiceInterface] Failed to connect:', err);
