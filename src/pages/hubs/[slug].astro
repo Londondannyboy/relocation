@@ -68,24 +68,31 @@ const countryResult = await sql`
 `;
 const country = countryResult[0];
 
-// Fetch all cluster articles for this hub
+// Fetch CORE cluster articles (Story/Guide/YOLO/Voices) - each has its OWN video
 const clusterResult = await sql`
   SELECT
-    id, slug, title, meta_description, article_mode, video_playback_id, is_primary
+    id, slug, title, meta_description, article_mode, video_playback_id, is_primary,
+    video_narrative, payload
   FROM articles
   WHERE cluster_id = ${hub.cluster_id}
     AND app = 'relocation'
     AND published_at IS NOT NULL
+    AND article_mode IN ('story', 'guide', 'yolo', 'voices')
   ORDER BY
     CASE article_mode
       WHEN 'story' THEN 1
       WHEN 'guide' THEN 2
       WHEN 'yolo' THEN 3
       WHEN 'voices' THEN 4
-      ELSE 5
     END
 `;
 const clusterArticles = clusterResult || [];
+
+// Log video IDs for debugging
+console.log('Cluster articles with videos:', clusterArticles.map((a: any) => ({
+  mode: a.article_mode,
+  video: a.video_playback_id?.substring(0, 20) + '...'
+})));
 
 // Fetch topic cluster articles (child articles linked to this hub's parent)
 const topicClusterResult = await sql`
@@ -313,34 +320,78 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </section>
   )}
 
-  <!-- Cluster Articles Navigation -->
+  <!-- Cluster Articles Navigation - Each with its OWN unique video -->
   {clusterArticles.length > 0 && (
     <section class="bg-gray-50 border-b border-gray-200 py-8">
       <div class="max-w-5xl mx-auto px-4">
-        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Explore {hub.location_name}</h2>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Explore {hub.location_name} - 4 Perspectives</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {clusterArticles.map((article: any) => {
+          {clusterArticles.map((article: any, index: number) => {
             const config = modeConfig[article.article_mode] || modeConfig.story;
+            // Use different act timestamps for visual variety (Act 1, 2, 3, 4)
+            const actTimes = [1.5, 4.5, 7.5, 10.5];
+            const thumbTime = actTimes[index % 4];
             return (
               <a
                 href={`/${article.slug}`}
                 class="article-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100"
               >
                 {article.video_playback_id && (
-                  <img
-                    src={getMuxThumbnail(article.video_playback_id, 5, 400)}
-                    alt={article.title}
-                    class="w-full aspect-video object-cover"
-                  />
+                  <div class="relative">
+                    <img
+                      src={getMuxThumbnail(article.video_playback_id, thumbTime, 400)}
+                      alt={article.title}
+                      class="w-full aspect-video object-cover"
+                    />
+                    <div class={`absolute top-2 right-2 bg-${config.color}-500 text-white text-xs px-2 py-1 rounded-full font-semibold`}>
+                      {config.icon} {config.label}
+                    </div>
+                  </div>
                 )}
                 <div class="p-4">
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class={`text-${config.color}-500`}>{config.icon}</span>
-                    <span class={`text-xs font-semibold text-${config.color}-600 uppercase`}>{config.label}</span>
-                  </div>
                   <h3 class="font-semibold text-gray-900 text-sm line-clamp-2">{article.title}</h3>
+                  <p class="text-xs text-gray-500 mt-1">{config.desc}</p>
                 </div>
               </a>
+            );
+          })}
+        </div>
+        <!-- Video attribution -->
+        <p class="text-xs text-gray-400 mt-4 text-center">
+          Each perspective has its own unique video journey
+        </p>
+      </div>
+    </section>
+  )}
+
+  <!-- 4-Act Story Timeline (from Story video) -->
+  {clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id && (
+    <section class="bg-gray-900 py-8">
+      <div class="max-w-5xl mx-auto px-4">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-6 text-center">
+          The {hub.location_name} Story - 4 Acts
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { act: 1, title: 'The Draw', time: 1.5, desc: 'What calls people here' },
+            { act: 2, title: 'The Opportunity', time: 4.5, desc: 'Business & lifestyle' },
+            { act: 3, title: 'The Journey', time: 7.5, desc: 'Making the move' },
+            { act: 4, title: 'The New Life', time: 10.5, desc: 'Living the dream' }
+          ].map((act) => {
+            const storyVideo = clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id;
+            return (
+              <div class="bg-gray-800 rounded-xl overflow-hidden">
+                <img
+                  src={getMuxThumbnail(storyVideo, act.time, 400)}
+                  alt={act.title}
+                  class="w-full aspect-video object-cover"
+                />
+                <div class="p-3">
+                  <span class="text-amber-500 text-xs font-bold">ACT {act.act}</span>
+                  <h4 class="text-white font-semibold text-sm">{act.title}</h4>
+                  <p class="text-gray-400 text-xs mt-1">{act.desc}</p>
+                </div>
+              </div>
             );
           })}
         </div>

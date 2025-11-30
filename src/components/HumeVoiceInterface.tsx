@@ -136,6 +136,7 @@ export default function HumeVoiceInterface({
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  links?: RelatedContent | null;
 }
 
 interface VoiceInterfaceProps {
@@ -144,10 +145,25 @@ interface VoiceInterfaceProps {
 }
 
 interface RelatedContent {
-  articles: Array<{ title: string; url: string; excerpt: string; type: string }>;
-  companies: Array<{ name: string; url: string; description: string; services: string[] }>;
-  countries: Array<{ name: string; flag: string; url: string; region: string; capital: string; highlights: string[] }>;
-  external: Array<{ title: string; url?: string; description: string; type: string }>;
+  articles: Array<{ title: string; url: string; excerpt?: string; type?: string }>;
+  companies: Array<{ name: string; url: string; description?: string; services?: string[] }>;
+  countries: Array<{ name: string; flag?: string; url: string; region?: string; capital?: string; highlights?: string[] }>;
+  external: Array<{ title: string; url?: string; description?: string; type?: string }>;
+}
+
+// Parse links from assistant response (format: "text\n\n---LINKS---\n{json}")
+function parseMessageWithLinks(content: string): { text: string; links: RelatedContent | null } {
+  const linksSeparator = '---LINKS---';
+  if (content.includes(linksSeparator)) {
+    const [text, linksJson] = content.split(linksSeparator);
+    try {
+      const links = JSON.parse(linksJson.trim());
+      return { text: text.trim(), links };
+    } catch {
+      return { text: content, links: null };
+    }
+  }
+  return { text: content, links: null };
 }
 
 const GATEWAY_URL = 'https://quest-gateway-production.up.railway.app';
@@ -157,7 +173,6 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [relatedContent, setRelatedContent] = useState<RelatedContent | null>(null);
-  const [lastQuery, setLastQuery] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isConnected = status.value === 'connected';
@@ -177,8 +192,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
 
   // Fetch related content when user message is detected
   const fetchRelatedContent = async (query: string) => {
-    if (!query || query === lastQuery) return;
-    setLastQuery(query);
+    if (!query) return;
 
     try {
       const response = await fetch(`${GATEWAY_URL}/voice/related-content`, {
@@ -203,6 +217,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   useEffect(() => {
     const processed: Message[] = [];
     let latestUserQuery = '';
+    let latestInlineLinks: RelatedContent | null = null;
 
     for (const msg of messages) {
       if (msg.type === 'user_message' && msg.message?.content) {
@@ -212,17 +227,34 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         });
         latestUserQuery = msg.message.content;
       } else if (msg.type === 'assistant_message' && msg.message?.content) {
+        // Parse links from assistant response
+        const { text, links } = parseMessageWithLinks(msg.message.content);
         processed.push({
           role: 'assistant',
-          content: msg.message.content
+          content: text,
+          links: links
         });
+        // Track inline links for facts panel
+        if (links) {
+          latestInlineLinks = links;
+        }
       }
     }
 
     setDisplayMessages(processed);
 
-    // Fetch related content for user's query
-    if (latestUserQuery && latestUserQuery !== lastQuery) {
+    // Update related content from inline links if present
+    if (latestInlineLinks) {
+      setRelatedContent(prev => ({
+        articles: [...(latestInlineLinks?.articles || []), ...(prev?.articles || [])].slice(0, 8),
+        companies: [...(latestInlineLinks?.companies || []), ...(prev?.companies || [])].slice(0, 5),
+        countries: [...(latestInlineLinks?.countries || []), ...(prev?.countries || [])].slice(0, 3),
+        external: prev?.external || []
+      }));
+    }
+
+    // Also fetch related content from API for each new user query
+    if (latestUserQuery) {
       fetchRelatedContent(latestUserQuery);
     }
   }, [messages]);
@@ -401,7 +433,8 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                 key={i}
                 style={{
                   display: 'flex',
-                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  flexDirection: 'column',
+                  alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 }}
               >
                 <div
@@ -421,6 +454,75 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                 >
                   {msg.content}
                 </div>
+                {/* Inline links for assistant messages */}
+                {msg.role === 'assistant' && msg.links && (
+                  <div style={{
+                    maxWidth: '80%',
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                  }}>
+                    {msg.links.countries?.map((c, idx) => (
+                      <a
+                        key={`country-${idx}`}
+                        href={c.url}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          background: 'rgba(102,126,234,0.3)',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          color: '#a5b4fc',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {c.flag || '🌍'} {c.name}
+                      </a>
+                    ))}
+                    {msg.links.articles?.slice(0, 3).map((a, idx) => (
+                      <a
+                        key={`article-${idx}`}
+                        href={a.url}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          background: 'rgba(255,255,255,0.15)',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          color: '#e2e8f0',
+                          fontSize: '12px',
+                        }}
+                      >
+                        📄 {a.title.length > 30 ? a.title.slice(0, 30) + '...' : a.title}
+                      </a>
+                    ))}
+                    {msg.links.companies?.slice(0, 2).map((co, idx) => (
+                      <a
+                        key={`company-${idx}`}
+                        href={co.url}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          background: 'rgba(118,75,162,0.3)',
+                          borderRadius: '12px',
+                          textDecoration: 'none',
+                          color: '#d8b4fe',
+                          fontSize: '12px',
+                        }}
+                      >
+                        🏢 {co.name}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
