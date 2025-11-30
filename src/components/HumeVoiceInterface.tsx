@@ -149,6 +149,16 @@ function VoiceInterface() {
   const isConnected = status.value === 'connected';
   const isConnecting = status.value === 'connecting';
 
+  // Log status changes
+  useEffect(() => {
+    console.log('[VoiceInterface] Status changed:', status.value);
+  }, [status.value]);
+
+  // Log when component mounts
+  useEffect(() => {
+    console.log('[VoiceInterface] Component mounted, initial status:', status.value);
+  }, []);
+
   // Process Hume messages into display format
   useEffect(() => {
     const processed: Message[] = [];
@@ -176,13 +186,18 @@ function VoiceInterface() {
   }, [displayMessages]);
 
   const handleToggleConnection = async () => {
+    console.log('[VoiceInterface] Button clicked, status:', status.value, 'isConnected:', isConnected);
+
     if (isConnected) {
+      console.log('[VoiceInterface] Disconnecting...');
       disconnect();
     } else {
+      console.log('[VoiceInterface] Attempting to connect...');
       try {
         await connect();
+        console.log('[VoiceInterface] Connect resolved');
       } catch (err) {
-        console.error('Failed to connect:', err);
+        console.error('[VoiceInterface] Failed to connect:', err);
       }
     }
   };
