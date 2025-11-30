@@ -9,7 +9,7 @@ import { sql } from '../../lib/db';
 const articlesResult = await sql`
   SELECT
     a.id, a.title, a.meta_description as excerpt, a.slug,
-    a.published_at, a.created_at, a.article_mode, a.article_type,
+    a.published_at, a.created_at, a.article_mode,
     a.country_code, a.video_playback_id, a.parent_id,
     c.name as country_name, c.flag_emoji
   FROM articles a
