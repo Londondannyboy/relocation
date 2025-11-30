@@ -1,6 +1,7 @@
 ---
 import SEO from '../components/SEO.astro';
 import HumeVoiceInterface from '../components/HumeVoiceInterface';
+import UserIndicator from '../components/UserIndicator';
 ---
 
 <!DOCTYPE html>
@@ -122,6 +123,7 @@ import HumeVoiceInterface from '../components/HumeVoiceInterface';
       <li><a href="/companies">Companies</a></li>
       <li><a href="/articles">Articles</a></li>
       <li><a href="/voice">Voice Assistant</a></li>
+      <li><UserIndicator client:load /></li>
     </ul>
   </nav>
 
