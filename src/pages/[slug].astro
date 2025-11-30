@@ -39,8 +39,8 @@ const { slug } = Astro.params;
 // These should NOT be caught by the dynamic [slug] route
 const RESERVED_PATHS = ['articles', 'guides', 'companies', 'hubs', 'auth', 'handler'];
 if (slug && RESERVED_PATHS.includes(slug)) {
-  // Let Astro handle these with their folder/index.astro routes
-  return Astro.rewrite(`/${slug}/`);
+  // Redirect to the folder route with trailing slash
+  return Astro.redirect(`/${slug}/`, 307);
 }
 
 // Prevent CDN caching - always fetch fresh from Neon
