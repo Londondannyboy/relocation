@@ -1,29 +1,49 @@
 ---
+/**
+ * Articles Index - Premium Dark Design
+ * =====================================
+ * Sophisticated, magazine-style layout
+ */
 import { sql } from '../../lib/db';
 
-// Fetch all published articles with featured images and videos
-const articles = await sql`
+const articlesResult = await sql`
   SELECT
-    a.id,
-    a.title,
-    a.meta_description as excerpt,
-    a.slug,
-    a.published_at,
-    a.created_at,
-    a.featured_asset_url,
-    a.featured_asset_alt,
-    a.video_url,
-    a.video_playback_id
+    a.id, a.title, a.meta_description as excerpt, a.slug,
+    a.published_at, a.created_at, a.article_mode, a.article_type,
+    a.country_code, a.video_playback_id, a.parent_id,
+    c.name as country_name, c.flag_emoji
   FROM articles a
-  WHERE a.app = 'relocation'
-    AND a.status = 'published'
+  LEFT JOIN countries c ON c.code = a.country_code
+  WHERE a.app = 'relocation' AND a.status = 'published'
   ORDER BY a.published_at DESC NULLS LAST, a.created_at DESC
+  LIMIT 100
 `;
 
-// Video playback IDs are now stored directly in the database (video-first architecture)
-articles.forEach((article: any) => {
-  article.mux_playback_id = article.video_playback_id || null;
+const articles = articlesResult || [];
+
+const featuredArticle = articles.find((a: any) => a.video_playback_id && a.article_mode === 'story')
+  || articles.find((a: any) => a.video_playback_id);
+
+const modeGroups: Record<string, any[]> = { 'story': [], 'guide': [], 'yolo': [], 'voices': [], 'topic': [], 'other': [] };
+articles.forEach((a: any) => {
+  const mode = a.article_mode || 'other';
+  (modeGroups[mode] || modeGroups['other']).push(a);
 });
+
+const modeConfig: Record<string, { label: string; icon: string; gradient: string; accent: string }> = {
+  'story': { label: 'Stories', icon: '📖', gradient: 'from-amber-500 to-orange-600', accent: '#f59e0b' },
+  'guide': { label: 'Guides', icon: '📋', gradient: 'from-blue-500 to-indigo-600', accent: '#3b82f6' },
+  'yolo': { label: 'YOLO', icon: '🚀', gradient: 'from-pink-500 to-rose-600', accent: '#ec4899' },
+  'voices': { label: 'Voices', icon: '💬', gradient: 'from-purple-500 to-violet-600', accent: '#8b5cf6' },
+  'topic': { label: 'Deep Dives', icon: '🔍', gradient: 'from-emerald-500 to-teal-600', accent: '#10b981' },
+  'other': { label: 'Articles', icon: '📄', gradient: 'from-gray-500 to-gray-600', accent: '#6b7280' },
+};
+
+function getThumbnail(article: any, index: number): string {
+  if (!article.video_playback_id) return '';
+  const baseTime = article.article_mode === 'topic' ? 1 + (index % 6) * 2 : 5;
+  return "https://image.mux.com/" + article.video_playback_id + "/thumbnail.jpg?time=" + baseTime + "&width=800";
+}
 ---
 
 <!DOCTYPE html>
@@ -31,80 +51,231 @@ articles.forEach((article: any) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All Articles - Relocation Quest</title>
-  <!-- Tailwind provided by @astrojs/tailwind integration -->
+  <title>Articles - Relocation Quest</title>
+  <meta name="description" content="Expert relocation guides, expat stories, and practical advice for moving abroad.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@mux/mux-player"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #0a0a0a; }
+    .card-3d { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-3d:hover { transform: translateY(-8px) scale(1.02); }
+    .glow { box-shadow: 0 0 60px -15px rgba(245, 158, 11, 0.3); }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    .gradient-text { background: linear-gradient(135deg, #f59e0b 0%, #ec4899 50%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .animate-float { animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .grid-pattern { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 50px 50px; }
+  </style>
 </head>
-<body class="bg-gray-50">
+
+<body class="text-white">
+  <!-- Animated Background -->
+  <div class="fixed inset-0 grid-pattern pointer-events-none"></div>
+  <div class="fixed top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
   <!-- Navigation -->
-  <nav class="bg-white shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
-          <h1 class="text-2xl font-bold text-blue-600">
-            <a href="/">Relocation</a>
-          </h1>
-        </div>
+  <nav class="fixed top-0 left-0 right-0 z-50 glass">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl font-bold">
+          <span class="text-white">Relocation</span><span class="text-amber-500">Quest</span>
+        </a>
         <div class="flex items-center space-x-8">
-          <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
-          <a href="/articles" class="text-gray-700 hover:text-blue-600 font-medium">Articles</a>
+          <a href="/" class="text-gray-400 hover:text-white transition-colors">Home</a>
+          <a href="/guides" class="text-gray-400 hover:text-white transition-colors">Guides</a>
+          <a href="/articles" class="text-amber-500 font-semibold">Articles</a>
+          <a href="/companies" class="text-gray-400 hover:text-white transition-colors">Companies</a>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Articles Header -->
-  <section class="bg-white py-12 border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h1 class="text-4xl font-bold text-gray-900 mb-2">All Articles</h1>
-      <p class="text-lg text-gray-600">Browse our complete collection of industry insights and news</p>
+  <!-- Hero -->
+  <header class="relative min-h-screen flex items-center pt-20">
+    {featuredArticle?.video_playback_id ? (
+      <div class="absolute inset-0 overflow-hidden">
+        <mux-player
+          playback-id={featuredArticle.video_playback_id}
+          autoplay="muted"
+          loop
+          class="w-full h-full object-cover opacity-40"
+          style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 100%; min-height: 100%;"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-[#0a0a0a]/80"></div>
+      </div>
+    ) : null}
+
+    <div class="relative z-10 max-w-7xl mx-auto px-6 py-20">
+      <div class="max-w-4xl">
+        <div class="flex items-center gap-4 mb-6">
+          <span class="glass px-4 py-2 rounded-full text-sm font-medium text-amber-400 animate-float">
+            ✨ {articles.length} Expert Articles
+          </span>
+          <span class="glass px-4 py-2 rounded-full text-sm font-medium text-purple-400">
+            🎬 {articles.filter((a: any) => a.video_playback_id).length} With Video
+          </span>
+        </div>
+
+        <h1 class="text-6xl md:text-8xl font-black mb-6 leading-none">
+          <span class="gradient-text">Expert</span>
+          <br />
+          <span class="text-white">Insights</span>
+        </h1>
+
+        <p class="text-xl text-gray-400 mb-10 max-w-2xl leading-relaxed">
+          Deep-dive guides, real expat stories, and actionable advice for your international relocation journey.
+        </p>
+
+        {featuredArticle && (
+          <a href={"/" + featuredArticle.slug}
+             class="group inline-flex items-center gap-4 glass px-8 py-4 rounded-2xl hover:bg-white/10 transition-all glow">
+            <div class="w-16 h-16 rounded-xl overflow-hidden">
+              <img src={getThumbnail(featuredArticle, 0)} alt="" class="w-full h-full object-cover" />
+            </div>
+            <div class="flex-1">
+              <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-1">Featured</p>
+              <p class="text-white font-bold line-clamp-1">{featuredArticle.title}</p>
+            </div>
+            <span class="text-2xl group-hover:translate-x-2 transition-transform">→</span>
+          </a>
+        )}
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats Bar -->
+  <section class="relative z-10 py-8 border-t border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {[
+          { value: modeGroups.story.length, label: 'Stories', icon: '📖' },
+          { value: modeGroups.guide.length, label: 'Guides', icon: '📋' },
+          { value: modeGroups.yolo.length + modeGroups.voices.length, label: 'Experiences', icon: '🌍' },
+          { value: modeGroups.topic.length, label: 'Deep Dives', icon: '🔍' },
+        ].map((stat) => (
+          <div class="text-center">
+            <div class="text-4xl font-black gradient-text">{stat.value}</div>
+            <div class="text-gray-500 text-sm mt-1">{stat.icon} {stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Mode Filter -->
+  <section class="sticky top-16 z-40 py-4 glass border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex items-center gap-3 overflow-x-auto">
+        {Object.entries(modeConfig).filter(([mode]) => modeGroups[mode]?.length > 0).map(([mode, config]) => (
+          <a href={"#" + mode}
+             class={"px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap flex items-center gap-2 bg-gradient-to-r " + config.gradient + " hover:opacity-90 transition-opacity"}>
+            {config.icon} {config.label}
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs">{modeGroups[mode].length}</span>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 
   <!-- Articles Grid -->
-  <section class="py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto;">
-        {articles.map((article: any) => (
-          <a href={`/${article.slug}`} style="text-decoration: none; color: inherit; display: block; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
-            {article.mux_playback_id ? (
-              <img src={`https://image.mux.com/${article.mux_playback_id}/animated.webp?start=6&width=600&fps=24`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
-            ) : article.featured_asset_url && (
-              <img src={article.featured_asset_url} alt={article.featured_asset_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
-            )}
-            <div style="padding: 24px;">
-              <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 12px 0; line-height: 1.3;">
-                {article.title}
-              </h3>
-              {article.excerpt && (
-                <p style="color: #666; margin: 0 0 16px 0; line-height: 1.6; font-size: 15px;">
-                  {article.excerpt}
-                </p>
-              )}
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: #999; font-size: 14px;">
-                  {new Date(article.published_at || article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <span style="color: #667eea; font-weight: 600; font-size: 14px;">
-                  Read more →
-                </span>
-              </div>
+  <main class="relative z-10 max-w-7xl mx-auto px-6 py-16">
+    {Object.entries(modeGroups).filter(([_, group]) => group.length > 0).map(([mode, group]) => {
+      const config = modeConfig[mode] || modeConfig.other;
+      return (
+        <section id={mode} class="mb-20">
+          <div class="flex items-center gap-4 mb-10">
+            <div class={"w-14 h-14 rounded-2xl bg-gradient-to-br " + config.gradient + " flex items-center justify-center text-2xl"}>
+              {config.icon}
             </div>
-          </a>
-        ))}
-      </div>
+            <div>
+              <h2 class="text-3xl font-bold text-white">{config.label}</h2>
+              <p class="text-gray-500">{group.length} {group.length === 1 ? 'article' : 'articles'}</p>
+            </div>
+          </div>
 
-      {articles.length === 0 && (
-        <div style="text-center; padding: 48px 0;">
-          <p style="color: #666; font-size: 18px;">No articles published yet. Check back soon!</p>
-        </div>
-      )}
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.map((article: any, index: number) => (
+              <a href={"/" + article.slug} class="card-3d group">
+                <div class="glass rounded-2xl overflow-hidden h-full">
+                  {article.video_playback_id ? (
+                    <div class="relative aspect-video">
+                      <img src={getThumbnail(article, index)} alt={article.title} class="w-full h-full object-cover" />
+                      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                      <div class="absolute bottom-4 left-4 right-4">
+                        {article.flag_emoji && <span class="text-2xl mr-2">{article.flag_emoji}</span>}
+                        <span class={"px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r " + config.gradient}>
+                          {config.icon} {config.label}
+                        </span>
+                      </div>
+                      <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                          <span class="text-2xl text-gray-900 ml-1">▶</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class={"aspect-video bg-gradient-to-br " + config.gradient + " opacity-30 flex items-center justify-center"}>
+                      <span class="text-6xl opacity-50">{config.icon}</span>
+                    </div>
+                  )}
+
+                  <div class="p-6">
+                    <h3 class="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-amber-400 transition-colors">
+                      {article.title}
+                    </h3>
+                    {article.excerpt && (
+                      <p class="text-gray-500 text-sm line-clamp-2 mb-4">{article.excerpt}</p>
+                    )}
+                    <div class="flex items-center justify-between">
+                      <span class="text-gray-600 text-xs">
+                        {new Date(article.published_at || article.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </span>
+                      <span class="text-amber-500 text-sm font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        Read <span>→</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    })}
+  </main>
+
+  <!-- CTA -->
+  <section class="relative z-10 py-20 border-t border-white/10">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h2 class="text-4xl md:text-5xl font-black mb-6">
+        <span class="gradient-text">Ready to Move?</span>
+      </h2>
+      <p class="text-xl text-gray-400 mb-10">
+        Explore our comprehensive country guides for everything you need.
+      </p>
+      <a href="/guides" class="inline-flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity glow">
+        Browse Country Guides <span class="text-2xl">→</span>
+      </a>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-white py-12 mt-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <p class="text-gray-400">© {new Date().getFullYear()} Relocation. All rights reserved.</p>
+  <footer class="relative z-10 border-t border-white/10 py-12">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-wrap justify-between items-center">
+        <p class="text-xl font-bold">Relocation<span class="text-amber-500">Quest</span></p>
+        <div class="flex gap-8">
+          <a href="/guides" class="text-gray-500 hover:text-white transition-colors">Guides</a>
+          <a href="/articles" class="text-gray-500 hover:text-white transition-colors">Articles</a>
+          <a href="/companies" class="text-gray-500 hover:text-white transition-colors">Companies</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/10 text-center text-gray-600 text-sm">
+        © {new Date().getFullYear()} Relocation Quest
+      </div>
     </div>
   </footer>
 </body>
