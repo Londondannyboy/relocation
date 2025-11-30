@@ -214,8 +214,16 @@ function CombinedInterface({ accessToken, sessionId, userId }: CombinedInterface
         processed.push({ role: 'user', content: msg.message.content });
         latestUserQuery = msg.message.content;
       } else if (msg.type === 'assistant_message' && msg.message?.content) {
-        // Remove any ---LINKS--- section from content
-        const content = msg.message.content.split('---LINKS---')[0].trim();
+        // Remove any system markers from content
+        let content = msg.message.content;
+        // Strip known markers
+        const markers = ['---LINKS---', '---MEMORY---', '---FACTS---', '---END---'];
+        for (const marker of markers) {
+          if (content.includes(marker)) {
+            content = content.split(marker)[0];
+          }
+        }
+        content = content.trim();
         processed.push({ role: 'assistant', content });
       }
     }
