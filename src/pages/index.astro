@@ -2,6 +2,7 @@
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
+import HumeVoiceInterface from '../components/HumeVoiceInterface';
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -732,6 +733,32 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
     </div>
   </section>
 
+  <!-- Voice Assistant Section - Embedded Widget -->
+  <section style="padding: 100px 60px; background: linear-gradient(180deg, #0a0a0a 0%, #111 100%); position: relative; overflow: hidden;">
+    <!-- Animated background -->
+    <div style="position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, rgba(102,126,234,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(118,75,162,0.15) 0%, transparent 50%);"></div>
+
+    <div style="max-width: 900px; margin: 0 auto; position: relative; z-index: 1;">
+      <div style="text-align: center; margin-bottom: 48px;">
+        <div style="display: inline-flex; align-items: center; gap: 12px; background: rgba(102,126,234,0.2); border: 1px solid rgba(102,126,234,0.3); padding: 8px 20px; border-radius: 100px; margin-bottom: 24px;">
+          <span style="font-size: 20px;">🎙️</span>
+          <span style="font-size: 14px; font-weight: 600; color: #a5b4fc; letter-spacing: 0.5px;">AI-POWERED ASSISTANT</span>
+        </div>
+        <h2 style="font-size: clamp(36px, 5vw, 56px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; color: white;">
+          Ask Our <span style="background: linear-gradient(135deg, #667eea, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Voice Assistant</span>
+        </h2>
+        <p style="font-size: 18px; color: rgba(255,255,255,0.7); max-width: 550px; margin: 0 auto; line-height: 1.6;">
+          Have questions about international relocation? Click the microphone and start talking.
+        </p>
+      </div>
+
+      <!-- Embedded Voice Widget -->
+      <div style="max-width: 500px; margin: 0 auto;">
+        <HumeVoiceInterface client:visible />
+      </div>
+    </div>
+  </section>
+
   <!-- Featured Article: Cyprus Digital Nomad Visa -->
   <section class="featured-video-section" style="position: relative; height: 80vh; overflow: hidden;">
     <video
@@ -985,56 +1012,6 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
           <div class="service-title">Settling-In Services</div>
           <div class="service-desc">Destination orientation and cultural integration support for expats</div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Voice Assistant Section -->
-  <section style="padding: 120px 60px; background: linear-gradient(180deg, #0a0a0a 0%, #111 100%); position: relative; overflow: hidden;">
-    <!-- Animated background -->
-    <div style="position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, rgba(102,126,234,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(118,75,162,0.15) 0%, transparent 50%);"></div>
-
-    <div style="max-width: 1000px; margin: 0 auto; position: relative; z-index: 1;">
-      <div style="text-align: center; margin-bottom: 60px;">
-        <div style="display: inline-flex; align-items: center; gap: 12px; background: rgba(102,126,234,0.2); border: 1px solid rgba(102,126,234,0.3); padding: 8px 20px; border-radius: 100px; margin-bottom: 24px;">
-          <span style="font-size: 20px;">🎙️</span>
-          <span style="font-size: 14px; font-weight: 600; color: #a5b4fc; letter-spacing: 0.5px;">AI-POWERED</span>
-        </div>
-        <h2 style="font-size: clamp(40px, 6vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 24px;">
-          Talk to Our<br>
-          <span style="background: linear-gradient(135deg, #667eea, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Voice Assistant</span>
-        </h2>
-        <p style="font-size: 20px; color: rgba(255,255,255,0.7); max-width: 600px; margin: 0 auto; line-height: 1.7;">
-          Have questions about international relocation? Our AI voice assistant is here to help — ask about visa requirements, cost of living, or moving to new countries.
-        </p>
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 48px;">
-        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; text-align: center;">
-          <div style="font-size: 36px; margin-bottom: 16px;">🌍</div>
-          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Visa Requirements</h3>
-          <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6;">Ask about visa types, eligibility, and application processes for any country</p>
-        </div>
-        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; text-align: center;">
-          <div style="font-size: 36px; margin-bottom: 16px;">💰</div>
-          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Cost of Living</h3>
-          <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6;">Get detailed cost breakdowns for housing, food, transport, and more</p>
-        </div>
-        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; text-align: center;">
-          <div style="font-size: 36px; margin-bottom: 16px;">📋</div>
-          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Relocation Tips</h3>
-          <p style="color: rgba(255,255,255,0.6); font-size: 14px; line-height: 1.6;">Step-by-step guidance on planning and executing your move</p>
-        </div>
-      </div>
-
-      <div style="text-align: center;">
-        <a href="/voice" style="display: inline-flex; align-items: center; gap: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 48px; border-radius: 100px; font-weight: 700; font-size: 18px; text-decoration: none; box-shadow: 0 10px 40px rgba(102,126,234,0.4); transition: transform 0.3s, box-shadow 0.3s;" onmouseover="this.style.transform='scale(1.05) translateY(-2px)'; this.style.boxShadow='0 20px 60px rgba(102,126,234,0.5)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 10px 40px rgba(102,126,234,0.4)'">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-          </svg>
-          <span>Start Voice Chat</span>
-        </a>
-        <p style="margin-top: 16px; color: rgba(255,255,255,0.4); font-size: 14px;">Powered by AI • No signup required</p>
       </div>
     </div>
   </section>
