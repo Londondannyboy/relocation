@@ -1138,6 +1138,15 @@ if (excerpt && !excerpt.endsWith('.') && !excerpt.endsWith('!') && !excerpt.ends
       );
     })}
 
+    <!-- Fallback: Render ALL content sections when fourActContent is empty -->
+    {fourActContent.length === 0 && contentSections.length > 1 && (
+      <div class="prose prose-lg max-w-none">
+        {contentSections.slice(1).map((section) => (
+          <div set:html={stripScriptTags(section)} class="mb-12" />
+        ))}
+      </div>
+    )}
+
     <!-- Country Comparison Cards (instead of plain table) -->
     {comparison && comparison.items && comparison.items.length > 0 && (
       <section class="mb-16">
