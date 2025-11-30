@@ -145,7 +145,7 @@ interface VoiceInterfaceProps {
 }
 
 interface RelatedContent {
-  articles: Array<{ title: string; url: string; excerpt?: string; type?: string }>;
+  articles: Array<{ title: string; short_title?: string; url: string; excerpt?: string; type?: string }>;
   companies: Array<{ name: string; url: string; description?: string; services?: string[] }>;
   countries: Array<{ name: string; flag?: string; url: string; region?: string; capital?: string; highlights?: string[] }>;
   external: Array<{ title: string; url?: string; description?: string; type?: string }>;
@@ -211,6 +211,8 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const fetchRelatedContent = async (query: string, conversationHistory: Message[]) => {
     if (!query) return;
 
+    console.log('[VoiceInterface] Fetching related content for:', query);
+
     try {
       const response = await fetch(`${GATEWAY_URL}/voice/related-content`, {
         method: 'POST',
@@ -222,12 +224,28 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         })
       });
 
+      console.log('[VoiceInterface] Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        if (data.articles?.length || data.companies?.length || data.countries?.length || data.external?.length) {
-          setRelatedContent(data);
-          console.log('[VoiceInterface] Related content found:', data);
-        }
+        console.log('[VoiceInterface] Related content response:', JSON.stringify(data).slice(0, 500));
+
+        // Always update with fresh data (merge with existing for accumulation)
+        setRelatedContent(prev => {
+          const newContent = {
+            articles: data.articles || [],
+            companies: data.companies || [],
+            countries: data.countries || [],
+            external: data.external || []
+          };
+
+          // If we have new content, use it; otherwise keep previous
+          if (newContent.articles.length || newContent.companies.length || newContent.countries.length) {
+            console.log('[VoiceInterface] Setting related content:', newContent);
+            return newContent;
+          }
+          return prev;
+        });
       }
     } catch (err) {
       console.error('[VoiceInterface] Failed to fetch related content:', err);
@@ -264,17 +282,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
 
     setDisplayMessages(processed);
 
-    // Update related content from inline links if present
-    if (latestInlineLinks) {
-      setRelatedContent(prev => ({
-        articles: [...(latestInlineLinks?.articles || []), ...(prev?.articles || [])].slice(0, 8),
-        companies: [...(latestInlineLinks?.companies || []), ...(prev?.companies || [])].slice(0, 5),
-        countries: [...(latestInlineLinks?.countries || []), ...(prev?.countries || [])].slice(0, 3),
-        external: prev?.external || []
-      }));
-    }
-
-    // Also fetch related content from API for each new user query
+    // Fetch related content from API for each new user query
     if (latestUserQuery) {
       fetchRelatedContent(latestUserQuery, processed);
     }
@@ -520,7 +528,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                           fontSize: '12px',
                         }}
                       >
-                        📄 {a.title.length > 30 ? a.title.slice(0, 30) + '...' : a.title}
+                        📄 {a.short_title || (a.title.length > 25 ? a.title.slice(0, 22) + '...' : a.title)}
                       </a>
                     ))}
                     {msg.links.companies?.slice(0, 2).map((co, idx) => (
@@ -683,22 +691,24 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
             {relatedContent.articles?.length > 0 && (
               <div style={{ marginBottom: '16px' }}>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Guides & Articles</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {relatedContent.articles.map((article, i) => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {relatedContent.articles.slice(0, 6).map((article, i) => (
                     <a
                       key={i}
                       href={article.url}
                       style={{
-                        display: 'block',
-                        padding: '10px 14px',
-                        background: 'rgba(255,255,255,0.08)',
-                        borderRadius: '10px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 12px',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '20px',
                         textDecoration: 'none',
                         color: 'white',
+                        fontSize: '13px',
                       }}
                     >
-                      <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>{article.title}</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{article.excerpt}</div>
+                      📄 {article.short_title || article.title}
                     </a>
                   ))}
                 </div>
@@ -757,6 +767,10 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
                       {ext.type === 'government' && '🏛️'}
                       {ext.type === 'reference' && '📊'}
                       {ext.type === 'community' && '👥'}
+                      {ext.type === 'education' && '🎓'}
+                      {ext.type === 'healthcare' && '🏥'}
+                      {ext.type === 'employment' && '💼'}
+                      {ext.type === 'finance' && '💳'}
                       {ext.title}
                     </a>
                   ))}
