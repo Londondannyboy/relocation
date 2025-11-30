@@ -547,12 +547,12 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
       const video = matchedMode && videosByMode[matchedMode];
       const thumbTime = matchedMode === 'story' ? 1.5 : matchedMode === 'guide' ? 4.5 : matchedMode === 'yolo' ? 7.5 : 10.5;
 
-      // Mode styling
-      const modeStyles: Record<string, { bg: string; accent: string; icon: string }> = {
-        'guide': { bg: 'from-blue-50 to-indigo-50', accent: 'blue', icon: '📋' },
-        'yolo': { bg: 'from-pink-50 to-rose-50', accent: 'pink', icon: '🚀' },
-        'voices': { bg: 'from-purple-50 to-violet-50', accent: 'purple', icon: '💬' },
-        'story': { bg: 'from-amber-50 to-orange-50', accent: 'amber', icon: '📖' },
+      // Mode styling - use full class names for Tailwind purging
+      const modeStyles: Record<string, { bg: string; textClass: string; icon: string }> = {
+        'guide': { bg: 'from-blue-50 to-indigo-50', textClass: 'text-blue-700 group-hover:text-blue-800', icon: '📋' },
+        'yolo': { bg: 'from-pink-50 to-rose-50', textClass: 'text-pink-700 group-hover:text-pink-800', icon: '🚀' },
+        'voices': { bg: 'from-purple-50 to-violet-50', textClass: 'text-purple-700 group-hover:text-purple-800', icon: '💬' },
+        'story': { bg: 'from-amber-50 to-orange-50', textClass: 'text-amber-700 group-hover:text-amber-800', icon: '📖' },
       };
       const style = matchedMode ? modeStyles[matchedMode] : null;
 
@@ -560,8 +560,8 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
         <div class="mb-8">
           {/* Video thumbnail above section (only for H2 sections with matched video) */}
           {index > 0 && video?.playbackId && style && (
-            <a href={`/${video.slug}`} class={`block mb-6 group`}>
-              <div class={`bg-gradient-to-r ${style.bg} rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow`}>
+            <a href={"/" + video.slug} class="block mb-6 group">
+              <div class={"bg-gradient-to-r " + style.bg + " rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow"}>
                 <div class="flex items-stretch">
                   <div class="w-1/3 relative">
                     <img
@@ -578,7 +578,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
                       <span>{style.icon}</span>
                       <span class="uppercase tracking-wider">{matchedMode} video</span>
                     </div>
-                    <p class={`font-semibold text-${style.accent}-700 group-hover:text-${style.accent}-800`}>
+                    <p class={"font-semibold " + style.textClass}>
                       Watch: {video.title}
                     </p>
                   </div>
