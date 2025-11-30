@@ -214,11 +214,11 @@ function getMuxThumbnail(id: string, time: number = 5, width: number = 800) {
 }
 
 // Mode config for display
-const modeConfig: Record<string, { label: string; icon: string; color: string; desc: string }> = {
-  'story': { label: 'Story', icon: '📖', color: 'amber', desc: 'Narrative journey' },
-  'guide': { label: 'Guide', icon: '📋', color: 'blue', desc: 'Step-by-step practical guide' },
-  'yolo': { label: 'YOLO', icon: '🚀', color: 'pink', desc: 'Adventure-focused' },
-  'voices': { label: 'Voices', icon: '💬', color: 'purple', desc: 'Real expat experiences' },
+const modeConfig: Record<string, { label: string; icon: string; badgeClass: string; desc: string }> = {
+  'story': { label: 'Story', icon: '📖', badgeClass: 'bg-amber-500 text-white', desc: 'Narrative journey' },
+  'guide': { label: 'Guide', icon: '📋', badgeClass: 'bg-blue-500 text-white', desc: 'Step-by-step practical guide' },
+  'yolo': { label: 'YOLO', icon: '🚀', badgeClass: 'bg-pink-500 text-white', desc: 'Adventure-focused' },
+  'voices': { label: 'Voices', icon: '💬', badgeClass: 'bg-purple-500 text-white', desc: 'Real expat experiences' },
 };
 
 // Canonical URL
@@ -463,7 +463,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
                       alt={article.title}
                       class="w-full aspect-video object-cover"
                     />
-                    <div class={`absolute top-2 right-2 bg-${config.color}-500 text-white text-xs px-2 py-1 rounded-full font-semibold`}>
+                    <div class={"absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-semibold " + config.badgeClass}>
                       {config.icon} {config.label}
                     </div>
                   </div>
