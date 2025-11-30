@@ -429,7 +429,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
                            article.article_mode === 'yolo' ? '🚀' :
                            article.article_mode === 'voices' ? '💬' : '📝';
           return (
-            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
+            <a href={"/" + article.slug} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
               <span class="text-amber-500">{modeEmoji}</span>
               <span class="font-medium">{article.title}</span>
               <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
@@ -453,7 +453,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
             const thumbTime = actTimes[index % 4];
             return (
               <a
-                href={`/${article.slug}`}
+                href={"/" + article.slug}
                 class="article-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100"
               >
                 {article.video_playback_id && (
@@ -603,7 +603,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
             const icon = getTopicIcon(article.title);
             return (
               <a
-                href={`/${article.slug}`}
+                href={"/" + article.slug}
                 class="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:border-amber-300 hover:bg-amber-50/50 transition-all group"
               >
                 <span class="text-2xl flex-shrink-0 mt-0.5">{icon}</span>
@@ -655,7 +655,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
           })}
         </div>
         <div class="text-center mt-6">
-          <a href={`/${clusterArticles.find((a: any) => a.article_mode === 'story')?.slug}`}
+          <a href={"/" + (clusterArticles.find((a: any) => a.article_mode === 'story')?.slug || '')}
              class="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-medium">
             Watch the full story →
           </a>
