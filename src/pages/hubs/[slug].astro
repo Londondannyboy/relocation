@@ -175,8 +175,14 @@ const quickStats = [
   { label: 'Climate', value: facts.climate, icon: '☀️' },
 ].filter(s => s.value && s.value !== 'N/A');
 
-// Playback ID from hub or primary article
-const playbackId = hub.video_playback_id || clusterArticles.find((a: any) => a.is_primary)?.video_playback_id;
+// Playback ID - multiple fallbacks for hero video
+// 1. Hub's own video, 2. Primary article, 3. Story article
+const playbackId = hub.video_playback_id ||
+  clusterArticles.find((a: any) => a.is_primary)?.video_playback_id ||
+  clusterArticles.find((a: any) => a.article_mode === 'story')?.video_playback_id;
+
+// Debug log
+console.log('Hub playbackId:', playbackId?.substring(0, 25), '| from hub:', !!hub.video_playback_id);
 
 // Scenic background for fallback hero (use YOLO or Story video from Act 4)
 function getScenicBackground(): string {

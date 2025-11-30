@@ -20,8 +20,8 @@ export default defineConfig({
   },
   vite: {
     ssr: {
-      // Handle SSR bundling - include hume packages
-      noExternal: ['@humeai/voice-react', 'hume']
+      // Handle SSR bundling - include packages that have ESM issues
+      noExternal: ['@humeai/voice-react', 'hume', '@stackframe/react', '@stackframe/stack-ui']
     },
     resolve: {
       alias: {

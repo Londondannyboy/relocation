@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { StackProvider, StackTheme, useUser } from "@stackframe/react";
 import { stackClientApp } from "../stack/client";
 
@@ -120,11 +120,25 @@ function UserMenu() {
   );
 }
 
+function LoadingIndicator() {
+  return (
+    <div style={{
+      padding: "8px 16px",
+      color: "#94a3b8",
+      fontSize: "14px"
+    }}>
+      Loading...
+    </div>
+  );
+}
+
 export default function UserIndicator() {
   return (
     <StackProvider app={stackClientApp}>
       <StackTheme>
-        <UserMenu />
+        <Suspense fallback={<LoadingIndicator />}>
+          <UserMenu />
+        </Suspense>
       </StackTheme>
     </StackProvider>
   );
