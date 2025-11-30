@@ -8,15 +8,14 @@ function AuthHandlerWithRedirect() {
   const isCallback = fullUrl.includes("oauth-callback");
 
   useEffect(() => {
-    // If user is authenticated and we're on a callback/handler page, redirect to voice
-    if (user && (isCallback || fullUrl.includes("/handler/"))) {
-      // Small delay to let Stack Auth finish processing
+    // Only redirect from oauth-callback after successful auth
+    if (user && isCallback) {
       const timer = setTimeout(() => {
         window.location.href = "/voice";
-      }, 500);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [user, isCallback, fullUrl]);
+  }, [user, isCallback]);
 
   return <StackHandler fullUrl={fullUrl} />;
 }
