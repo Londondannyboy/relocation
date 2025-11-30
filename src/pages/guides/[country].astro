@@ -1,8 +1,9 @@
 ---
 /**
- * Country Guide Template
- * ======================
- * Now with YOLO video, Summary, and Story sections like articles
+ * Country Guide Template (Legacy)
+ * ================================
+ * Redirects to new SEO-optimized hub pages if available.
+ * Falls back to old guide template for countries without hubs.
  */
 import { sql } from '../../lib/db';
 
@@ -11,6 +12,39 @@ const { country } = Astro.params;
 if (!country) {
   return Astro.redirect('/guides');
 }
+
+// First, check if there's a new hub page for this country (301 redirect)
+const hubResult = await sql`
+  SELECT slug FROM country_hubs
+  WHERE legacy_slug = ${country}
+    AND status = 'published'
+  LIMIT 1
+`;
+
+if (hubResult[0]?.slug) {
+  // 301 Permanent Redirect to new SEO hub URL
+  return Astro.redirect(`/hubs/${hubResult[0].slug}`, 301);
+}
+
+// Also check by country code lookup
+const countryCodeResult = await sql`
+  SELECT code FROM countries WHERE slug = ${country} LIMIT 1
+`;
+
+if (countryCodeResult[0]?.code) {
+  const hubByCodeResult = await sql`
+    SELECT slug FROM country_hubs
+    WHERE country_code = ${countryCodeResult[0].code}
+      AND status = 'published'
+    LIMIT 1
+  `;
+
+  if (hubByCodeResult[0]?.slug) {
+    return Astro.redirect(`/hubs/${hubByCodeResult[0].slug}`, 301);
+  }
+}
+
+// No hub found - continue with legacy guide page
 
 // Fetch country data
 const countryResult = await sql`
