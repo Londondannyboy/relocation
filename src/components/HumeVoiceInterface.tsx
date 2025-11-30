@@ -19,12 +19,17 @@ export default function HumeVoiceInterface({
 
   // Fetch access token from gateway
   useEffect(() => {
+    console.log('[HumeVoiceInterface] Component mounted, fetching access token...');
+
     async function fetchAccessToken() {
       try {
+        console.log('[HumeVoiceInterface] Fetching from:', `${apiUrl}/voice/access-token`);
         const response = await fetch(`${apiUrl}/voice/access-token`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         });
+
+        console.log('[HumeVoiceInterface] Response status:', response.status);
 
         if (!response.ok) {
           const text = await response.text();
@@ -32,10 +37,11 @@ export default function HumeVoiceInterface({
         }
 
         const data = await response.json();
+        console.log('[HumeVoiceInterface] Got access token, length:', data.accessToken?.length);
         setAccessToken(data.accessToken);
         setIsLoading(false);
       } catch (err) {
-        console.error('Error fetching access token:', err);
+        console.error('[HumeVoiceInterface] Error fetching access token:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize voice interface');
         setIsLoading(false);
       }
@@ -44,25 +50,67 @@ export default function HumeVoiceInterface({
     fetchAccessToken();
   }, [apiUrl]);
 
+  // Loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-white/80">Initializing voice interface...</p>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px',
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '16px',
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid rgba(147, 112, 219, 0.3)',
+            borderTopColor: '#9370DB',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <p style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Initializing voice interface...</p>
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       </div>
     );
   }
 
+  // Error state
   if (error || !accessToken) {
     return (
-      <div className="p-6 bg-red-500/20 border border-red-400/30 rounded-lg backdrop-blur-sm">
-        <h3 className="text-red-200 font-semibold mb-2">Voice Interface Unavailable</h3>
-        <p className="text-red-300 text-sm">{error || 'Could not initialize voice interface'}</p>
+      <div style={{
+        padding: '24px',
+        background: 'rgba(239, 68, 68, 0.2)',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        borderRadius: '12px',
+        backdropFilter: 'blur(10px)',
+      }}>
+        <h3 style={{ color: '#fca5a5', fontWeight: 600, marginBottom: '8px' }}>
+          Voice Interface Unavailable
+        </h3>
+        <p style={{ color: '#fecaca', fontSize: '14px' }}>
+          {error || 'Could not initialize voice interface'}
+        </p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-500/30 hover:bg-red-500/40 text-white rounded-lg transition-colors"
+          style={{
+            marginTop: '16px',
+            padding: '8px 16px',
+            background: 'rgba(239, 68, 68, 0.3)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+          }}
         >
           Try Again
         </button>
@@ -70,15 +118,16 @@ export default function HumeVoiceInterface({
     );
   }
 
+  // Connected - render VoiceProvider
   return (
     <VoiceProvider
       auth={{ type: 'accessToken', value: accessToken }}
       configId={configId}
       onMessage={(message) => {
-        console.log('Hume message:', message);
+        console.log('[Hume] Message:', message);
       }}
       onError={(err) => {
-        console.error('Hume error:', err);
+        console.error('[Hume] Error:', err);
       }}
     >
       <VoiceInterface />
@@ -146,28 +195,108 @@ function VoiceInterface() {
     }
   };
 
+  const containerStyle: React.CSSProperties = {
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '24px',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+    overflow: 'hidden',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    padding: '16px 24px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  };
+
+  const statusDotStyle: React.CSSProperties = {
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    background: isConnected ? '#22c55e' : isConnecting ? '#eab308' : '#6b7280',
+    animation: isConnected ? 'pulse 2s ease-in-out infinite' : 'none',
+  };
+
+  const messagesContainerStyle: React.CSSProperties = {
+    height: '320px',
+    overflowY: 'auto',
+    padding: '16px',
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.6)',
+    padding: '16px',
+  };
+
+  const controlsStyle: React.CSSProperties = {
+    padding: '24px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px',
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    border: 'none',
+    color: 'white',
+    fontSize: '24px',
+    cursor: isConnecting ? 'wait' : 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: isConnected
+      ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+      : isConnecting
+      ? '#eab308'
+      : 'linear-gradient(135deg, #667eea, #764ba2)',
+    boxShadow: isConnected
+      ? '0 10px 40px rgba(239, 68, 68, 0.4)'
+      : '0 10px 40px rgba(102, 126, 234, 0.4)',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+  };
+
   return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+    <div style={containerStyle}>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-3 h-3 rounded-full ${
-            isConnected ? 'bg-green-400 animate-pulse' :
-            isConnecting ? 'bg-yellow-400 animate-pulse' :
-            'bg-gray-400'
-          }`} />
-          <span className="text-white font-medium">
+      <div style={headerStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={statusDotStyle} />
+          <span style={{ color: 'white', fontWeight: 600 }}>
             {isConnected ? 'Listening...' : isConnecting ? 'Connecting...' : 'Ready to chat'}
           </span>
         </div>
         {isConnected && (
           <button
             onClick={handleToggleMute}
-            className={`px-3 py-1 rounded-full text-sm ${
-              isMuted
-                ? 'bg-red-500/30 text-red-200'
-                : 'bg-green-500/30 text-green-200'
-            }`}
+            style={{
+              padding: '4px 12px',
+              borderRadius: '20px',
+              border: 'none',
+              fontSize: '14px',
+              cursor: 'pointer',
+              background: isMuted ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)',
+              color: isMuted ? '#fca5a5' : '#86efac',
+            }}
           >
             {isMuted ? 'Unmute' : 'Mute'}
           </button>
@@ -175,77 +304,128 @@ function VoiceInterface() {
       </div>
 
       {/* Messages Area */}
-      <div className="h-80 overflow-y-auto p-4 space-y-3">
+      <div style={messagesContainerStyle}>
         {displayMessages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center text-white/60 px-4">
-            <div className="w-16 h-16 mb-4 rounded-full bg-white/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div style={emptyStateStyle}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              marginBottom: '16px',
+              borderRadius: '50%',
+              background: 'rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <svg style={{ width: '32px', height: '32px', color: 'rgba(255,255,255,0.4)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </div>
-            <p className="mb-2">Press the microphone to start</p>
-            <p className="text-sm text-white/40">Ask about visa requirements, cost of living, or relocation tips</p>
+            <p style={{ marginBottom: '8px' }}>Press the microphone to start</p>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)' }}>
+              Ask about visa requirements, cost of living, or relocation tips
+            </p>
           </div>
         ) : (
-          displayMessages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {displayMessages.map((msg, i) => (
               <div
-                className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                  msg.role === 'user'
-                    ? 'bg-purple-500/40 text-white rounded-br-sm'
-                    : 'bg-white/20 text-white rounded-bl-sm'
-                }`}
+                key={i}
+                style={{
+                  display: 'flex',
+                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                }}
               >
-                {msg.content}
+                <div
+                  style={{
+                    maxWidth: '80%',
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    borderBottomRightRadius: msg.role === 'user' ? '4px' : '16px',
+                    borderBottomLeftRadius: msg.role === 'assistant' ? '4px' : '16px',
+                    background: msg.role === 'user'
+                      ? 'rgba(147, 112, 219, 0.4)'
+                      : 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    fontSize: '15px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {msg.content}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Controls */}
-      <div className="px-6 py-5 border-t border-white/10 flex flex-col items-center gap-4">
+      <div style={controlsStyle}>
         <button
           onClick={handleToggleConnection}
           disabled={isConnecting}
-          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-            isConnected
-              ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30'
-              : isConnecting
-              ? 'bg-yellow-500 cursor-wait'
-              : 'bg-gradient-to-br from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 shadow-lg shadow-purple-500/30'
-          }`}
+          style={buttonStyle}
+          onMouseEnter={(e) => {
+            if (!isConnecting) {
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
         >
           {isConnecting ? (
-            <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin" />
+            <div style={{
+              width: '32px',
+              height: '32px',
+              border: '3px solid rgba(255,255,255,0.3)',
+              borderTopColor: 'white',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }} />
           ) : isConnected ? (
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: '32px', height: '32px' }} fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="6" width="12" height="12" rx="2" />
             </svg>
           ) : (
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: '40px', height: '40px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
           )}
         </button>
-        <p className="text-white/50 text-sm">
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px' }}>
           {isConnected ? 'Click to end session' : isConnecting ? 'Connecting...' : 'Click to start talking'}
         </p>
       </div>
 
       {/* Suggestions */}
-      <div className="px-6 pb-6">
-        <div className="bg-white/5 rounded-xl p-4">
-          <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Try asking</p>
-          <div className="flex flex-wrap gap-2">
+      <div style={{ padding: '0 24px 24px' }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '12px',
+          padding: '16px',
+        }}>
+          <p style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: '12px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            marginBottom: '8px',
+          }}>
+            Try asking
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {['Visa requirements', 'Cost of living', 'Best countries'].map((suggestion) => (
               <span
                 key={suggestion}
-                className="px-3 py-1 bg-white/10 rounded-full text-white/70 text-sm"
+                style={{
+                  padding: '6px 12px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '20px',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontSize: '14px',
+                }}
               >
                 {suggestion}
               </span>
