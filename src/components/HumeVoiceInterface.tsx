@@ -149,6 +149,8 @@ interface RelatedContent {
   companies: Array<{ name: string; url: string; description?: string; services?: string[] }>;
   countries: Array<{ name: string; flag?: string; url: string; region?: string; capital?: string; highlights?: string[] }>;
   external: Array<{ title: string; url?: string; description?: string; type?: string }>;
+  facts?: string[];  // AI-extracted facts from ZEP
+  topics?: string[]; // Topics identified by AI
 }
 
 // Parse links from assistant response (format: "text\n\n---LINKS---\n{json}")
@@ -230,17 +232,19 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         const data = await response.json();
         console.log('[VoiceInterface] Related content response:', JSON.stringify(data).slice(0, 500));
 
-        // Always update with fresh data (merge with existing for accumulation)
+        // Always update with fresh data
         setRelatedContent(prev => {
           const newContent = {
             articles: data.articles || [],
             companies: data.companies || [],
             countries: data.countries || [],
-            external: data.external || []
+            external: data.external || [],
+            facts: data.facts || [],
+            topics: data.topics || []
           };
 
-          // If we have new content, use it; otherwise keep previous
-          if (newContent.articles.length || newContent.companies.length || newContent.countries.length) {
+          // If we have any new content, use it; otherwise keep previous
+          if (newContent.facts.length || newContent.articles.length || newContent.companies.length || newContent.countries.length) {
             console.log('[VoiceInterface] Setting related content:', newContent);
             return newContent;
           }
@@ -636,7 +640,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
       )}
 
       {/* Related Content Panel */}
-      {relatedContent && (relatedContent.articles?.length > 0 || relatedContent.companies?.length > 0 || relatedContent.countries?.length > 0) && (
+      {relatedContent && (relatedContent.facts?.length > 0 || relatedContent.articles?.length > 0 || relatedContent.companies?.length > 0 || relatedContent.countries?.length > 0) && (
         <div style={{ padding: '0 24px 24px' }}>
           <div style={{
             background: 'rgba(255, 255, 255, 0.05)',
@@ -654,6 +658,33 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
             }}>
               📚 Related Resources
             </p>
+
+            {/* AI-extracted Facts */}
+            {relatedContent.facts && relatedContent.facts.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>
+                  💡 Key Facts
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {relatedContent.facts.map((fact, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '12px 14px',
+                        background: 'linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2))',
+                        borderRadius: '10px',
+                        borderLeft: '3px solid #a5b4fc',
+                        color: 'white',
+                        fontSize: '14px',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {fact}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Countries */}
             {relatedContent.countries?.length > 0 && (
