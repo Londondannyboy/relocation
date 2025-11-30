@@ -1,6 +1,6 @@
 ---
 import SEO from '../components/SEO.astro';
-import HumeVoiceInterface from '../components/HumeVoiceInterface';
+import VoiceWithUI from '../components/VoiceWithUI';
 import UserIndicator from '../components/UserIndicator';
 
 export const prerender = false;
@@ -106,12 +106,13 @@ export const prerender = false;
       font-size: 16px;
     }
 
-    .voice-section {
+    .chat-section {
       background: white;
       border-radius: 16px;
       padding: 24px;
       flex: 1;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      min-height: 600px;
     }
 
     .section-header {
@@ -281,12 +282,8 @@ export const prerender = false;
         <p>Chat with our AI assistant about international relocation</p>
       </div>
 
-      <div class="voice-section">
-        <div class="section-header">
-          <div class="section-icon">🎙️</div>
-          <h2>Voice Assistant</h2>
-        </div>
-        <HumeVoiceInterface client:load />
+      <div class="chat-section">
+        <VoiceWithUI client:only="react" />
       </div>
     </div>
 

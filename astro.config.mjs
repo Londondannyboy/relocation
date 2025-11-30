@@ -21,7 +21,7 @@ export default defineConfig({
   vite: {
     ssr: {
       // Handle SSR bundling - include packages that have ESM issues
-      noExternal: ['@humeai/voice-react', 'hume', '@stackframe/react', '@stackframe/stack-ui']
+      noExternal: ['@humeai/voice-react', 'hume', '@stackframe/react', '@stackframe/stack-ui', '@thesysai/genui-sdk']
     },
     resolve: {
       alias: {
