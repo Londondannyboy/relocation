@@ -144,13 +144,22 @@ interface VoiceInterfaceProps {
   configId: string;
 }
 
+interface CategoryData {
+  icon: string;
+  color: string;
+  label: string;
+  facts: string[];
+  links: Array<{ title: string; url?: string; type: string }>;
+}
+
 interface RelatedContent {
   articles: Array<{ title: string; short_title?: string; url: string; excerpt?: string; type?: string }>;
   companies: Array<{ name: string; url: string; description?: string; services?: string[] }>;
   countries: Array<{ name: string; flag?: string; url: string; region?: string; capital?: string; highlights?: string[] }>;
   external: Array<{ title: string; url?: string; description?: string; type?: string }>;
-  facts?: string[];  // AI-extracted facts from ZEP
-  topics?: string[]; // Topics identified by AI
+  categorized_facts?: Record<string, CategoryData>;
+  topics?: string[];
+  country?: string;
 }
 
 // Parse links from assistant response (format: "text\n\n---LINKS---\n{json}")
@@ -190,6 +199,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [relatedContent, setRelatedContent] = useState<RelatedContent | null>(null);
+  const [isNewContent, setIsNewContent] = useState(false);
   const [sessionId] = useState<string>(() => getSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -233,23 +243,27 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         console.log('[VoiceInterface] Related content response:', JSON.stringify(data).slice(0, 500));
 
         // Always update with fresh data
-        setRelatedContent(prev => {
-          const newContent = {
-            articles: data.articles || [],
-            companies: data.companies || [],
-            countries: data.countries || [],
-            external: data.external || [],
-            facts: data.facts || [],
-            topics: data.topics || []
-          };
+        const newContent: RelatedContent = {
+          articles: data.articles || [],
+          companies: data.companies || [],
+          countries: data.countries || [],
+          external: data.external || [],
+          categorized_facts: data.categorized_facts || {},
+          topics: data.topics || [],
+          country: data.country
+        };
 
-          // If we have any new content, use it; otherwise keep previous
-          if (newContent.facts.length || newContent.articles.length || newContent.companies.length || newContent.countries.length) {
-            console.log('[VoiceInterface] Setting related content:', newContent);
-            return newContent;
-          }
-          return prev;
-        });
+        // Check if we have any categorized facts
+        const hasContent = Object.keys(newContent.categorized_facts || {}).length > 0 ||
+                          newContent.articles.length > 0 ||
+                          newContent.countries.length > 0;
+
+        if (hasContent) {
+          console.log('[VoiceInterface] Setting related content:', newContent);
+          setRelatedContent(newContent);
+          setIsNewContent(true);
+          setTimeout(() => setIsNewContent(false), 2000); // Reset animation after 2s
+        }
       }
     } catch (err) {
       console.error('[VoiceInterface] Failed to fetch related content:', err);
@@ -639,176 +653,171 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         </div>
       )}
 
-      {/* Related Content Panel */}
-      {relatedContent && (relatedContent.facts?.length > 0 || relatedContent.articles?.length > 0 || relatedContent.companies?.length > 0 || relatedContent.countries?.length > 0) && (
-        <div style={{ padding: '0 24px 24px' }}>
+      {/* Categorized Facts Panel - News Feed Style */}
+      {relatedContent?.categorized_facts && Object.keys(relatedContent.categorized_facts).length > 0 && (
+        <div style={{
+          padding: '0 24px 24px',
+          animation: isNewContent ? 'pulse 0.5s ease-out' : undefined,
+        }}>
+          {/* Header with country if detected */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '16px',
-            padding: '20px',
-            border: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px',
           }}>
-            <p style={{
-              color: '#a5b4fc',
-              fontSize: '12px',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              marginBottom: '16px',
-              fontWeight: 600,
-            }}>
-              📚 Related Resources
-            </p>
-
-            {/* AI-extracted Facts */}
-            {relatedContent.facts && relatedContent.facts.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>
-                  💡 Key Facts
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {relatedContent.facts.map((fact, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        padding: '12px 14px',
-                        background: 'linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2))',
-                        borderRadius: '10px',
-                        borderLeft: '3px solid #a5b4fc',
-                        color: 'white',
-                        fontSize: '14px',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {fact}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Countries */}
-            {relatedContent.countries?.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Country Guides</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {relatedContent.countries.map((country, i) => (
-                    <a
-                      key={i}
-                      href={country.url}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 14px',
-                        background: 'rgba(102,126,234,0.15)',
-                        borderRadius: '10px',
-                        textDecoration: 'none',
-                        color: 'white',
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      <span style={{ fontSize: '20px' }}>{country.flag}</span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{country.name}</div>
-                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{country.region}</div>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Articles */}
-            {relatedContent.articles?.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Guides & Articles</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {relatedContent.articles.slice(0, 6).map((article, i) => (
-                    <a
-                      key={i}
-                      href={article.url}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 12px',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '20px',
-                        textDecoration: 'none',
-                        color: 'white',
-                        fontSize: '13px',
-                      }}
-                    >
-                      📄 {article.short_title || article.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Companies */}
-            {relatedContent.companies?.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Service Providers</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {relatedContent.companies.map((company, i) => (
-                    <a
-                      key={i}
-                      href={company.url}
-                      style={{
-                        display: 'block',
-                        padding: '10px 14px',
-                        background: 'rgba(118,75,162,0.15)',
-                        borderRadius: '10px',
-                        textDecoration: 'none',
-                        color: 'white',
-                      }}
-                    >
-                      <div style={{ fontWeight: 600, fontSize: '14px' }}>{company.name}</div>
-                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{company.description}</div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* External Resources */}
-            {relatedContent.external?.length > 0 && (
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>External Resources</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {relatedContent.external.map((ext, i) => (
-                    <a
-                      key={i}
-                      href={ext.url || '#'}
-                      target={ext.url ? '_blank' : undefined}
-                      rel={ext.url ? 'noopener noreferrer' : undefined}
-                      style={{
-                        padding: '8px 14px',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '20px',
-                        textDecoration: 'none',
-                        color: 'rgba(255,255,255,0.8)',
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      {ext.type === 'government' && '🏛️'}
-                      {ext.type === 'reference' && '📊'}
-                      {ext.type === 'community' && '👥'}
-                      {ext.type === 'education' && '🎓'}
-                      {ext.type === 'healthcare' && '🏥'}
-                      {ext.type === 'employment' && '💼'}
-                      {ext.type === 'finance' && '💳'}
-                      {ext.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>📡</span>
+              <span style={{
+                color: '#a5b4fc',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                fontWeight: 600,
+              }}>
+                Live Intelligence
+              </span>
+            </div>
+            {isNewContent && (
+              <span style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
+                fontSize: '10px',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                animation: 'fadeIn 0.3s ease-out',
+              }}>
+                ✨ NEW
+              </span>
             )}
           </div>
+
+          {/* Country banner if detected */}
+          {relatedContent.country && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3))',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              border: '1px solid rgba(165,180,252,0.3)',
+            }}>
+              <span style={{ fontSize: '24px' }}>🌍</span>
+              <div>
+                <div style={{ color: 'white', fontWeight: 600, fontSize: '15px' }}>
+                  {relatedContent.country} Insights
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                  {relatedContent.topics?.join(' • ')}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Categorized fact cards */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {Object.entries(relatedContent.categorized_facts).map(([key, category]) => (
+              <div
+                key={key}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  borderLeft: `4px solid ${category.color}`,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+              >
+                {/* Category header */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}>
+                  <span style={{ fontSize: '18px' }}>{category.icon}</span>
+                  <span style={{
+                    color: category.color,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                  }}>
+                    {category.label}
+                  </span>
+                </div>
+
+                {/* Facts */}
+                {category.facts.length > 0 && (
+                  <div style={{ marginBottom: category.links.length > 0 ? '12px' : 0 }}>
+                    {category.facts.map((fact, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          color: 'white',
+                          fontSize: '14px',
+                          lineHeight: 1.6,
+                          padding: '8px 0',
+                          borderBottom: i < category.facts.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                        }}
+                      >
+                        {fact}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Links */}
+                {category.links.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {category.links.slice(0, 4).map((link, i) => (
+                      <a
+                        key={i}
+                        href={link.url || '#'}
+                        target={link.type === 'external' ? '_blank' : undefined}
+                        rel={link.type === 'external' ? 'noopener noreferrer' : undefined}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          background: `${category.color}22`,
+                          border: `1px solid ${category.color}44`,
+                          borderRadius: '20px',
+                          textDecoration: 'none',
+                          color: category.color,
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        {link.type === 'article' && '📄'}
+                        {link.type === 'company' && '🏢'}
+                        {link.type === 'country' && '🗺️'}
+                        {link.type === 'external' && '🔗'}
+                        {link.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Animation keyframes */}
+          <style>{`
+            @keyframes pulse {
+              0% { opacity: 0.7; transform: scale(0.98); }
+              50% { opacity: 1; transform: scale(1.01); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(-5px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
         </div>
       )}
     </div>
