@@ -214,11 +214,11 @@ function getMuxThumbnail(id: string, time: number = 5, width: number = 800) {
 }
 
 // Mode config for display
-const modeConfig: Record<string, { label: string; icon: string; badgeClass: string; desc: string }> = {
-  'story': { label: 'Story', icon: '📖', badgeClass: 'bg-amber-500 text-white', desc: 'Narrative journey' },
-  'guide': { label: 'Guide', icon: '📋', badgeClass: 'bg-blue-500 text-white', desc: 'Step-by-step practical guide' },
-  'yolo': { label: 'YOLO', icon: '🚀', badgeClass: 'bg-pink-500 text-white', desc: 'Adventure-focused' },
-  'voices': { label: 'Voices', icon: '💬', badgeClass: 'bg-purple-500 text-white', desc: 'Real expat experiences' },
+const modeConfig: Record<string, { label: string; icon: string; color: string; desc: string }> = {
+  'story': { label: 'Story', icon: '📖', color: 'amber', desc: 'Narrative journey' },
+  'guide': { label: 'Guide', icon: '📋', color: 'blue', desc: 'Step-by-step practical guide' },
+  'yolo': { label: 'YOLO', icon: '🚀', color: 'pink', desc: 'Adventure-focused' },
+  'voices': { label: 'Voices', icon: '💬', color: 'purple', desc: 'Real expat experiences' },
 };
 
 // Canonical URL
@@ -429,7 +429,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
                            article.article_mode === 'yolo' ? '🚀' :
                            article.article_mode === 'voices' ? '💬' : '📝';
           return (
-            <a href={"/" + article.slug} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
+            <a href={`/${article.slug}`} class="ticker-item flex items-center gap-2 text-gray-300 hover:text-amber-400 transition-colors text-sm">
               <span class="text-amber-500">{modeEmoji}</span>
               <span class="font-medium">{article.title}</span>
               <span class="text-gray-500 text-xs">• {formatTickerDate(new Date(pubDate))}</span>
@@ -453,7 +453,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
             const thumbTime = actTimes[index % 4];
             return (
               <a
-                href={"/" + article.slug}
+                href={`/${article.slug}`}
                 class="article-card bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100"
               >
                 {article.video_playback_id && (
@@ -463,7 +463,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
                       alt={article.title}
                       class="w-full aspect-video object-cover"
                     />
-                    <div class={"absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-semibold " + config.badgeClass}>
+                    <div class={`absolute top-2 right-2 bg-${config.color}-500 text-white text-xs px-2 py-1 rounded-full font-semibold`}>
                       {config.icon} {config.label}
                     </div>
                   </div>
@@ -484,114 +484,111 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
     </section>
   )}
 
-  <!-- Main Hub Content with Video Thumbnails Above Each Section -->
+  <!-- Main Hub Content with Embedded Videos -->
   <main class="max-w-4xl mx-auto px-4 py-12">
 
-    {hub.hub_content && (() => {
-      // Split content by H2 headers to process each section
-      const sections = hub.hub_content.split(/(?=## )/);
+    <!-- Guide Video Section - Practical Steps -->
+    {videosByMode.guide?.playbackId && (
+      <section class="my-8 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">📋</span>
+            <h3 class="text-lg font-bold text-gray-900">The Practical Guide</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.guide.playbackId}
+              accent-color="#3b82f6"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.guide.description}</p>
+          <a href={`/${videosByMode.guide.slug}`} class="inline-flex items-center gap-2 text-blue-600 font-medium mt-2 hover:text-blue-700">
+            Read full guide →
+          </a>
+        </div>
+      </section>
+    )}
 
-      // Topic-to-video mapping based on section keywords
-      const topicVideoMap: Record<string, { mode: string; keywords: string[] }> = {
-        'guide': { mode: 'guide', keywords: ['visa', 'permit', 'legal', 'process', 'step', 'how to', 'requirement', 'document', 'application'] },
-        'yolo': { mode: 'yolo', keywords: ['lifestyle', 'beach', 'adventure', 'nightlife', 'culture', 'food', 'entertainment', 'leisure', 'climate', 'weather'] },
-        'voices': { mode: 'voices', keywords: ['expat', 'community', 'experience', 'story', 'interview', 'testimonial', 'real', 'people'] },
-        'story': { mode: 'story', keywords: ['overview', 'introduction', 'why', 'history', 'background', 'journey'] },
-      };
+    <!-- Hub Content (generated HTML) -->
+    {hub.hub_content && (
+      <div class="prose max-w-none" set:html={hub.hub_content} />
+    )}
 
-      // Match section header to video mode
-      function matchSectionToVideo(headerText: string): string | null {
-        const lower = headerText.toLowerCase();
-        for (const [mode, config] of Object.entries(topicVideoMap)) {
-          if (config.keywords.some(kw => lower.includes(kw))) {
-            return config.mode;
-          }
-        }
-        return null;
-      }
+    <!-- YOLO Video Section - Lifestyle & Adventure -->
+    {videosByMode.yolo?.playbackId && (
+      <section class="my-12 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-pink-50 to-rose-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">🚀</span>
+            <h3 class="text-lg font-bold text-gray-900">Life & Adventure in {hub.location_name}</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.yolo.playbackId}
+              accent-color="#ec4899"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.yolo.description}</p>
+          <a href={`/${videosByMode.yolo.slug}`} class="inline-flex items-center gap-2 text-pink-600 font-medium mt-2 hover:text-pink-700">
+            Explore the adventure →
+          </a>
+        </div>
+      </section>
+    )}
 
-      // Get thumbnail time based on mode (different acts)
-      function getThumbTime(mode: string): number {
-        const times: Record<string, number> = { 'story': 1.5, 'guide': 4.5, 'yolo': 7.5, 'voices': 10.5 };
-        return times[mode] || 5;
-      }
+    <!-- Voices Video Section - Real Expat Stories -->
+    {videosByMode.voices?.playbackId && (
+      <section class="my-12 -mx-4 px-4">
+        <div class="bg-gradient-to-r from-purple-50 to-violet-50 rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-2xl">💬</span>
+            <h3 class="text-lg font-bold text-gray-900">Real Voices from {hub.location_name}</h3>
+          </div>
+          <div class="rounded-xl overflow-hidden shadow-lg">
+            <mux-player
+              playback-id={videosByMode.voices.playbackId}
+              accent-color="#8b5cf6"
+              class="w-full aspect-video"
+            />
+          </div>
+          <p class="text-sm text-gray-600 mt-3">{videosByMode.voices.description}</p>
+          <a href={`/${videosByMode.voices.slug}`} class="inline-flex items-center gap-2 text-purple-600 font-medium mt-2 hover:text-purple-700">
+            Hear more stories →
+          </a>
+        </div>
+      </section>
+    )}
 
-      // Track used videos to avoid repetition
-      const usedModes = new Set<string>();
-
-      return sections;
-    })().map((section: string, index: number) => {
-      // Extract header text for matching
-      const headerMatch = section.match(/^## (.+?)[\n\r]/);
-      const headerText = headerMatch ? headerMatch[1] : '';
-
-      // Topic-to-video mapping
-      const topicVideoMap: Record<string, string[]> = {
-        'guide': ['visa', 'permit', 'legal', 'process', 'step', 'requirement', 'document', 'application', 'tax', 'corporate', 'business'],
-        'yolo': ['lifestyle', 'beach', 'adventure', 'nightlife', 'culture', 'food', 'entertainment', 'leisure', 'climate', 'living', 'cost'],
-        'voices': ['expat', 'community', 'experience', 'testimonial', 'real', 'people', 'voices'],
-        'story': ['overview', 'introduction', 'why', 'history', 'background', 'journey', 'draw'],
-      };
-
-      // Match section to video
-      let matchedMode: string | null = null;
-      const lower = headerText.toLowerCase();
-      for (const [mode, keywords] of Object.entries(topicVideoMap)) {
-        if (keywords.some(kw => lower.includes(kw))) {
-          matchedMode = mode;
-          break;
-        }
-      }
-
-      // Get video for this section
-      const video = matchedMode && videosByMode[matchedMode];
-      const thumbTime = matchedMode === 'story' ? 1.5 : matchedMode === 'guide' ? 4.5 : matchedMode === 'yolo' ? 7.5 : 10.5;
-
-      // Mode styling - use full class names for Tailwind purging
-      const modeStyles: Record<string, { bg: string; textClass: string; icon: string }> = {
-        'guide': { bg: 'from-blue-50 to-indigo-50', textClass: 'text-blue-700 group-hover:text-blue-800', icon: '📋' },
-        'yolo': { bg: 'from-pink-50 to-rose-50', textClass: 'text-pink-700 group-hover:text-pink-800', icon: '🚀' },
-        'voices': { bg: 'from-purple-50 to-violet-50', textClass: 'text-purple-700 group-hover:text-purple-800', icon: '💬' },
-        'story': { bg: 'from-amber-50 to-orange-50', textClass: 'text-amber-700 group-hover:text-amber-800', icon: '📖' },
-      };
-      const style = matchedMode ? modeStyles[matchedMode] : null;
-
-      return (
-        <div class="mb-8">
-          {/* Video thumbnail above section (only for H2 sections with matched video) */}
-          {index > 0 && video?.playbackId && style && (
-            <a href={"/" + video.slug} class="block mb-6 group">
-              <div class={"bg-gradient-to-r " + style.bg + " rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow"}>
-                <div class="flex items-stretch">
-                  <div class="w-1/3 relative">
-                    <img
-                      src={getMuxThumbnail(video.playbackId, thumbTime, 400)}
-                      alt={headerText}
-                      class="w-full h-full object-cover aspect-video"
-                    />
-                    <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                      <span class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-gray-900">▶</span>
-                    </div>
-                  </div>
-                  <div class="flex-1 p-4 flex flex-col justify-center">
-                    <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                      <span>{style.icon}</span>
-                      <span class="uppercase tracking-wider">{matchedMode} video</span>
-                    </div>
-                    <p class={"font-semibold " + style.textClass}>
-                      Watch: {video.title}
-                    </p>
+    <!-- Visual Break: Video Perspectives Grid -->
+    {clusterArticles.length >= 2 && (
+      <section class="my-12 bg-gradient-to-r from-amber-50 to-orange-50 -mx-4 px-4 py-8 rounded-2xl">
+        <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">See {hub.location_name} Through Different Lenses</h3>
+        <div class="grid grid-cols-2 gap-4">
+          {clusterArticles.slice(0, 4).map((article: any, i: number) => {
+            const config = modeConfig[article.article_mode] || modeConfig.story;
+            // Each video gets a different act time for visual variety
+            const actTimes = [2, 5, 8, 11];
+            return (
+              <a href={`/${article.slug}`} class="group relative rounded-xl overflow-hidden">
+                <img
+                  src={getMuxThumbnail(article.video_playback_id, actTimes[i], 500)}
+                  alt={config.label}
+                  class="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-4">
+                  <div>
+                    <span class="text-white text-2xl">{config.icon}</span>
+                    <span class="text-white font-semibold ml-2">{config.label}</span>
                   </div>
                 </div>
-              </div>
-            </a>
-          )}
-
-          {/* Section content */}
-          <div class="prose max-w-none" set:html={section} />
+              </a>
+            );
+          })}
         </div>
-      );
-    })}
+      </section>
+    )}
 
     <!-- Topic Cluster Articles - Clean List Format -->
     {topicArticles.length > 0 && (
@@ -603,7 +600,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
             const icon = getTopicIcon(article.title);
             return (
               <a
-                href={"/" + article.slug}
+                href={`/${article.slug}`}
                 class="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:border-amber-300 hover:bg-amber-50/50 transition-all group"
               >
                 <span class="text-2xl flex-shrink-0 mt-0.5">{icon}</span>
@@ -655,7 +652,7 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
           })}
         </div>
         <div class="text-center mt-6">
-          <a href={"/" + (clusterArticles.find((a: any) => a.article_mode === 'story')?.slug || '')}
+          <a href={`/${clusterArticles.find((a: any) => a.article_mode === 'story')?.slug}`}
              class="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 font-medium">
             Watch the full story →
           </a>
