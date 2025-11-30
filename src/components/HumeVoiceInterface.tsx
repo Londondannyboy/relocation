@@ -143,10 +143,21 @@ interface VoiceInterfaceProps {
   configId: string;
 }
 
+interface RelatedContent {
+  articles: Array<{ title: string; url: string; excerpt: string; type: string }>;
+  companies: Array<{ name: string; url: string; description: string; services: string[] }>;
+  countries: Array<{ name: string; flag: string; url: string; region: string; capital: string; highlights: string[] }>;
+  external: Array<{ title: string; url?: string; description: string; type: string }>;
+}
+
+const GATEWAY_URL = 'https://quest-gateway-production.up.railway.app';
+
 // Inner component that uses Hume hooks
 function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
   const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
+  const [relatedContent, setRelatedContent] = useState<RelatedContent | null>(null);
+  const [lastQuery, setLastQuery] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isConnected = status.value === 'connected';
@@ -164,9 +175,34 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     console.log('[VoiceInterface] configId:', configId);
   }, []);
 
+  // Fetch related content when user message is detected
+  const fetchRelatedContent = async (query: string) => {
+    if (!query || query === lastQuery) return;
+    setLastQuery(query);
+
+    try {
+      const response = await fetch(`${GATEWAY_URL}/voice/related-content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.articles?.length || data.companies?.length || data.countries?.length || data.external?.length) {
+          setRelatedContent(data);
+          console.log('[VoiceInterface] Related content found:', data);
+        }
+      }
+    } catch (err) {
+      console.error('[VoiceInterface] Failed to fetch related content:', err);
+    }
+  };
+
   // Process Hume messages into display format
   useEffect(() => {
     const processed: Message[] = [];
+    let latestUserQuery = '';
 
     for (const msg of messages) {
       if (msg.type === 'user_message' && msg.message?.content) {
@@ -174,6 +210,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
           role: 'user',
           content: msg.message.content
         });
+        latestUserQuery = msg.message.content;
       } else if (msg.type === 'assistant_message' && msg.message?.content) {
         processed.push({
           role: 'assistant',
@@ -183,6 +220,11 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     }
 
     setDisplayMessages(processed);
+
+    // Fetch related content for user's query
+    if (latestUserQuery && latestUserQuery !== lastQuery) {
+      fetchRelatedContent(latestUserQuery);
+    }
   }, [messages]);
 
   // Auto-scroll to bottom
@@ -425,40 +467,182 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
         </p>
       </div>
 
-      {/* Suggestions */}
-      <div style={{ padding: '0 24px 24px' }}>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '12px',
-          padding: '16px',
-        }}>
-          <p style={{
-            color: 'rgba(255,255,255,0.4)',
-            fontSize: '12px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            marginBottom: '8px',
+      {/* Suggestions (hidden when we have related content) */}
+      {!relatedContent && (
+        <div style={{ padding: '0 24px 24px' }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '12px',
+            padding: '16px',
           }}>
-            Try asking
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {['Visa requirements', 'Cost of living', 'Best countries'].map((suggestion) => (
-              <span
-                key={suggestion}
-                style={{
-                  padding: '6px 12px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '20px',
-                  color: 'rgba(255,255,255,0.7)',
-                  fontSize: '14px',
-                }}
-              >
-                {suggestion}
-              </span>
-            ))}
+            <p style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              marginBottom: '8px',
+            }}>
+              Try asking
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {['Visa requirements', 'Cost of living', 'Best countries'].map((suggestion) => (
+                <span
+                  key={suggestion}
+                  style={{
+                    padding: '6px 12px',
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '20px',
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '14px',
+                  }}
+                >
+                  {suggestion}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Related Content Panel */}
+      {relatedContent && (relatedContent.articles?.length > 0 || relatedContent.companies?.length > 0 || relatedContent.countries?.length > 0) && (
+        <div style={{ padding: '0 24px 24px' }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}>
+            <p style={{
+              color: '#a5b4fc',
+              fontSize: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '16px',
+              fontWeight: 600,
+            }}>
+              📚 Related Resources
+            </p>
+
+            {/* Countries */}
+            {relatedContent.countries?.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Country Guides</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {relatedContent.countries.map((country, i) => (
+                    <a
+                      key={i}
+                      href={country.url}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 14px',
+                        background: 'rgba(102,126,234,0.15)',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        color: 'white',
+                        transition: 'background 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: '20px' }}>{country.flag}</span>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '14px' }}>{country.name}</div>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{country.region}</div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Articles */}
+            {relatedContent.articles?.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Guides & Articles</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {relatedContent.articles.map((article, i) => (
+                    <a
+                      key={i}
+                      href={article.url}
+                      style={{
+                        display: 'block',
+                        padding: '10px 14px',
+                        background: 'rgba(255,255,255,0.08)',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        color: 'white',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>{article.title}</div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>{article.excerpt}</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Companies */}
+            {relatedContent.companies?.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>Service Providers</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {relatedContent.companies.map((company, i) => (
+                    <a
+                      key={i}
+                      href={company.url}
+                      style={{
+                        display: 'block',
+                        padding: '10px 14px',
+                        background: 'rgba(118,75,162,0.15)',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        color: 'white',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '14px' }}>{company.name}</div>
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>{company.description}</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* External Resources */}
+            {relatedContent.external?.length > 0 && (
+              <div>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase' }}>External Resources</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {relatedContent.external.map((ext, i) => (
+                    <a
+                      key={i}
+                      href={ext.url || '#'}
+                      target={ext.url ? '_blank' : undefined}
+                      rel={ext.url ? 'noopener noreferrer' : undefined}
+                      style={{
+                        padding: '8px 14px',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '20px',
+                        textDecoration: 'none',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      {ext.type === 'government' && '🏛️'}
+                      {ext.type === 'reference' && '📊'}
+                      {ext.type === 'community' && '👥'}
+                      {ext.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
