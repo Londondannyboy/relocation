@@ -1,10 +1,24 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { StackProvider, StackTheme, useUser } from "@stackframe/react";
 import { stackClientApp } from "../stack/client";
 
 function UserMenu() {
   const user = useUser();
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showMenu]);
 
   if (!user) {
     return (
@@ -26,8 +40,18 @@ function UserMenu() {
     );
   }
 
+  const handleSignOut = async () => {
+    setShowMenu(false);
+    try {
+      await user.signOut();
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Sign out failed:", err);
+    }
+  };
+
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={menuRef} style={{ position: "relative" }}>
       <button
         onClick={() => setShowMenu(!showMenu)}
         style={{
@@ -82,6 +106,7 @@ function UserMenu() {
           </div>
           <a
             href="/profile"
+            onClick={() => setShowMenu(false)}
             style={{
               display: "block",
               padding: "12px 16px",
@@ -96,7 +121,7 @@ function UserMenu() {
             Profile
           </a>
           <button
-            onClick={() => user.signOut()}
+            onClick={handleSignOut}
             style={{
               display: "block",
               width: "100%",
