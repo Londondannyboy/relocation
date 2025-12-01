@@ -721,7 +721,7 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
 
     <div style="position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; text-align: center;">
       <h1 style="font-size: clamp(56px, 10vw, 140px); font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin-bottom: 32px; text-transform: uppercase; color: #fff; text-shadow: 0 4px 60px rgba(0,0,0,0.3);">
-        YOUR NEXT<br>CHAPTER<br>STARTS HERE
+        RELOCATION<br><span style="background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">QUEST</span>
       </h1>
 
       <p style="font-size: clamp(18px, 2.5vw, 24px); font-weight: 400; line-height: 1.6; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto 48px; text-shadow: 0 2px 20px rgba(0,0,0,0.2);">
@@ -940,58 +940,6 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
     </section>
   )}
 
-  <!-- Companies Section -->
-  <section class="companies-section">
-    <div class="companies-video-bg">
-      <video id="companies-video" autoplay loop muted playsinline></video>
-    </div>
-    <div class="companies-overlay"></div>
-
-    <div class="companies-content">
-      <div class="section-header">
-        <h2>Latest Guides & Resources</h2>
-        <p>Expert insights and comprehensive guides for international relocation, visa applications, and starting your global journey</p>
-      </div>
-
-      {articles.length > 0 ? (
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto;">
-          {articles.map((article: any, index: number) => (
-            <a href={`/${article.slug}`} style="text-decoration: none; color: inherit; display: block; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
-              {article.mux_playback_id ? (
-                <img src={`https://image.mux.com/${article.mux_playback_id}/animated.gif?start=6&width=600`} alt={article.title} style="width: 100%; height: 220px; object-fit: cover;" />
-              ) : article.featured_asset_url && (
-                <img src={article.featured_asset_url} alt={article.featured_asset_alt || article.title} style="width: 100%; height: 220px; object-fit: cover;" />
-              )}
-              <div style="padding: 24px;">
-                <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 0 0 12px 0; line-height: 1.3;">
-                  {article.title}
-                </h3>
-                {article.excerpt && (
-                  <p style="color: #666; margin: 0 0 16px 0; line-height: 1.6; font-size: 15px;">
-                    {article.excerpt}
-                  </p>
-                )}
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: #999; font-size: 14px;">
-                    {new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <span style="color: #667eea; font-weight: 600; font-size: 14px;">
-                    Read more →
-                  </span>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      ) : (
-        <div class="empty-state">
-          <h3>Coming Soon</h3>
-          <p>We're currently curating the finest relocation companies. Check back soon!</p>
-        </div>
-      )}
-    </div>
-  </section>
-
   <!-- Services Grid -->
   <section class="services-section">
     <div class="section-header">
@@ -1076,7 +1024,7 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
         <h3>Resources</h3>
         <ul class="footer-links">
           <li><a href="/articles">Articles & Insights</a></li>
-          <li><a href="/companies">Relocation Services</a></li>
+          <li><a href="/guides">Country Guides</a></li>
         </ul>
       </div>
 
