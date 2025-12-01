@@ -85,63 +85,65 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
       overflow-x: hidden;
     }
 
-    /* Navigation */
-    nav {
+    /* Navigation - Glass Style */
+    .glass-nav {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 9999;
-      padding: 24px 60px;
+      padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      pointer-events: auto;
     }
 
-    nav * {
-      pointer-events: auto;
-    }
-
-    .logo {
+    .nav-logo {
       font-size: 20px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #667eea, #f093fb);
-      background-clip: text;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .nav-logo .text-white { color: #fff; }
+    .nav-logo .text-amber { color: #f59e0b; }
+
+    .nav-links-new {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-link {
+      color: #9ca3af;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover { color: #fff; }
+    .nav-link.active { color: #f59e0b; font-weight: 600; }
+
+    .nav-voice {
+      background: linear-gradient(135deg, #667eea, #764ba2);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
+      background-clip: text;
     }
 
-    .nav-links {
-      display: flex;
-      gap: 40px;
-      list-style: none;
-    }
-
-    .nav-links a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-      transition: opacity 0.3s;
-    }
-
-    .nav-links a:hover { opacity: 0.6; }
-
-    .nav-signin {
-      background: linear-gradient(135deg, #667eea, #764ba2) !important;
-      padding: 8px 20px !important;
-      border-radius: 20px !important;
+    .nav-signin-new {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 8px 20px;
+      border-radius: 20px;
+      color: #fff !important;
       -webkit-text-fill-color: #fff !important;
     }
 
-    .nav-signin:hover {
-      opacity: 0.9 !important;
-      transform: scale(1.05);
+    .nav-signin-new:hover {
+      opacity: 0.9;
     }
 
     /* Hero with Mux Video - Placement style */
@@ -682,15 +684,17 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
 </head>
 <body>
   <!-- Navigation -->
-  <nav>
-    <div class="logo">Relocation Quest</div>
-    <ul class="nav-links">
-      <li><a href="/">Home</a></li>
-      <li><a href="/guides">Guides</a></li>
-      <li><a href="/articles">Articles</a></li>
-      <li><a href="/voice" style="background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Voice Assistant</a></li>
-      <li><a href="/handler/sign-in" class="nav-signin">Sign In</a></li>
-    </ul>
+  <nav class="glass-nav">
+    <a href="/" class="nav-logo">
+      <span class="text-white">Relocation</span><span class="text-amber">Quest</span>
+    </a>
+    <div class="nav-links-new">
+      <a href="/" class="nav-link active">Home</a>
+      <a href="/guides" class="nav-link">Guides</a>
+      <a href="/articles" class="nav-link">Articles</a>
+      <a href="/voice" class="nav-link nav-voice">Voice Assistant</a>
+      <a href="/handler/sign-in" class="nav-link nav-signin-new">Sign In</a>
+    </div>
   </nav>
 
   <!-- Hero with Mux Video (Placement-style video-only) -->
@@ -712,28 +716,6 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
     <div class="hero-overlay"></div>
   </section>
 
-  <!-- Bold Welcome Section - Full Width, Punchy -->
-  <section class="welcome-bold" style="position: relative; padding: 120px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); overflow: hidden;">
-    <!-- Decorative elements -->
-    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1920&q=80') center/cover; opacity: 0.15; mix-blend-mode: overlay;"></div>
-    <div style="position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%); border-radius: 50%;"></div>
-    <div style="position: absolute; bottom: -150px; left: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, transparent 60%); border-radius: 50%;"></div>
-
-    <div style="position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; text-align: center;">
-      <h1 style="font-size: clamp(56px, 10vw, 140px); font-weight: 900; line-height: 0.95; letter-spacing: -0.03em; margin-bottom: 32px; text-transform: uppercase; color: #fff; text-shadow: 0 4px 60px rgba(0,0,0,0.3);">
-        RELOCATION<br><span style="background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">QUEST</span>
-      </h1>
-
-      <p style="font-size: clamp(18px, 2.5vw, 24px); font-weight: 400; line-height: 1.6; color: rgba(255,255,255,0.95); max-width: 700px; margin: 0 auto 48px; text-shadow: 0 2px 20px rgba(0,0,0,0.2);">
-        The definitive guide to international relocation. Corporate moves, digital nomad visas, and expat services — worldwide.
-      </p>
-
-      <div class="hero-cta" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-        <a href="/guides" class="btn" style="background: #fff; color: #764ba2; padding: 20px 48px; border-radius: 100px; font-weight: 700; font-size: 16px; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2); transition: transform 0.3s, box-shadow 0.3s;">Explore Guides</a>
-        <a href="/articles" class="btn" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #fff; padding: 20px 48px; border-radius: 100px; font-weight: 700; font-size: 16px; text-decoration: none; border: 2px solid rgba(255,255,255,0.4); transition: background 0.3s;">Latest Articles</a>
-      </div>
-    </div>
-  </section>
 
   <!-- Voice Assistant Section - PROMINENT -->
   <section id="voice-assistant" style="padding: 80px 24px; background: linear-gradient(180deg, #0a0a0a 0%, #0f0f1a 100%); position: relative; overflow: hidden;">
