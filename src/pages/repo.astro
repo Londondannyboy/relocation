@@ -1,0 +1,152 @@
+---
+import SEO from '../components/SEO.astro';
+import UserRepo from '../components/UserRepo';
+import UserGraph from '../components/UserGraph';
+import UserIndicator from '../components/UserIndicator';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="Your Repository | Relocation.Quest"
+    description="View everything we know about you - your relocation profile, conversation history, and extracted facts."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #e2e8f0;
+    }
+
+    nav {
+      padding: 24px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .nav-links a:hover { opacity: 0.7; }
+
+    main {
+      flex: 1;
+      padding: 40px 60px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+      color: white;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .page-header p {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 20px 24px;
+      }
+
+      main {
+        padding: 24px;
+      }
+
+      .nav-links {
+        gap: 16px;
+      }
+
+      .page-header h1 {
+        font-size: 1.8rem;
+      }
+
+      .page-header p {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="logo">Relocation.Quest</a>
+    <ul class="nav-links">
+      <li><a href="/voice">Voice Assistant</a></li>
+      <li><a href="/repo">Your Repo</a></li>
+      <li><UserIndicator client:only="react" /></li>
+    </ul>
+  </nav>
+
+  <main>
+    <div class="page-header">
+      <h1>Your Repository</h1>
+      <p>Everything we know about your relocation journey</p>
+    </div>
+
+    <!-- Knowledge Graph Visualization -->
+    <div style="margin-bottom: 48px;">
+      <h2 style="color: white; font-size: 1.5rem; margin-bottom: 16px; font-weight: 700;">
+        Your Knowledge Graph
+      </h2>
+      <p style="color: rgba(255, 255, 255, 0.6); margin-bottom: 24px;">
+        Visual representation of everything we know about your relocation journey
+      </p>
+      <UserGraph client:only="react" />
+    </div>
+
+    <!-- Profile Details -->
+    <div style="margin-top: 48px;">
+      <h2 style="color: white; font-size: 1.5rem; margin-bottom: 16px; font-weight: 700;">
+        Profile Details
+      </h2>
+      <UserRepo client:load />
+    </div>
+  </main>
+</body>
+</html>

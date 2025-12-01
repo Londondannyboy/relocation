@@ -111,8 +111,19 @@ function VoiceWithUIInner({ user }: VoiceWithUIInnerProps) {
     );
   }
 
+  // Build the user ID for Hume tracking
+  const humeUserId = user?.id || sessionId;
+
+  console.log('[VoiceWithUI] Connecting with customSessionId:', humeUserId);
+
   return (
-    <VoiceProvider>
+    <VoiceProvider
+      auth={{ type: 'accessToken', value: accessToken }}
+      configId={HUME_CONFIG_ID}
+      sessionSettings={{
+        customSessionId: humeUserId,
+      }}
+    >
       <CombinedInterface
         accessToken={accessToken}
         sessionId={sessionId}

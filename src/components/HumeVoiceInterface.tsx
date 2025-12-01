@@ -9,6 +9,20 @@ interface HumeVoiceInterfaceProps {
 // Hume config ID for the relocation assistant
 const HUME_CONFIG_ID = '54f86c53-cfc0-4adc-9af0-0c4b907cadc5';
 
+// Generate or retrieve persistent user ID from localStorage
+function getUserId(): string {
+  const storageKey = 'relocation_quest_user_id';
+  let userId = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+  if (!userId) {
+    userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(storageKey, userId);
+    }
+  }
+  return userId;
+}
+
 export default function HumeVoiceInterface({
   apiUrl = 'https://quest-gateway-production.up.railway.app',
   configId = HUME_CONFIG_ID
@@ -16,6 +30,7 @@ export default function HumeVoiceInterface({
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId] = useState<string>(() => getUserId());
 
   // Fetch access token from gateway
   useEffect(() => {
@@ -118,9 +133,16 @@ export default function HumeVoiceInterface({
     );
   }
 
-  // Connected - render VoiceProvider
+  console.log('[HumeVoiceInterface] Rendering with userId:', userId);
+
+  // Connected - render VoiceProvider with customSessionId for user tracking
   return (
     <VoiceProvider
+      auth={{ type: 'accessToken', value: accessToken }}
+      configId={configId}
+      sessionSettings={{
+        customSessionId: userId,  // Pass user ID to Hume for tracking
+      }}
       onMessage={(message) => {
         console.log('[Hume] Message:', message);
       }}
@@ -128,7 +150,7 @@ export default function HumeVoiceInterface({
         console.error('[Hume] Error:', err);
       }}
     >
-      <VoiceInterface accessToken={accessToken} configId={configId} />
+      <VoiceInterface accessToken={accessToken} configId={configId} userId={userId} />
     </VoiceProvider>
   );
 }
@@ -142,6 +164,7 @@ interface Message {
 interface VoiceInterfaceProps {
   accessToken: string;
   configId: string;
+  userId: string;
 }
 
 // Simplified related content - just articles with links
@@ -184,21 +207,83 @@ function getSessionId(): string {
 }
 
 // Inner component that uses Hume hooks
-function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
-  const { connect, disconnect, status, isMuted, mute, unmute, messages } = useVoice();
+function VoiceInterface({ accessToken, configId, userId }: VoiceInterfaceProps) {
+  const { connect, disconnect, status, isMuted, mute, unmute, messages, chatId } = useVoice();
   const [displayMessages, setDisplayMessages] = useState<Message[]>([]);
   const [relatedContent, setRelatedContent] = useState<RelatedContent | null>(null);
   const [isNewContent, setIsNewContent] = useState(false);
   const [sessionId] = useState<string>(() => getSessionId());
+  const [extractedProfile, setExtractedProfile] = useState<Record<string, any> | null>(null);
+  const [showTranscript, setShowTranscript] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // Debounce extraction to prevent rate limiting
+  const lastExtractionRef = useRef<number>(0);
+  const lastQueryRef = useRef<string>('');
+  const extractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isConnected = status.value === 'connected';
   const isConnecting = status.value === 'connecting';
 
-  // Log status changes
+  // Extract profile from conversation using Gemini API
+  const extractProfile = async (conversationMessages: Message[]) => {
+    if (!userId || conversationMessages.length < 2) return;
+
+    try {
+      console.log('[VoiceInterface] Extracting profile for user:', userId);
+      const response = await fetch('/api/profile/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          app_id: 'relocation',
+          messages: conversationMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+          session_id: sessionId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[VoiceInterface] Profile extracted:', data.extracted);
+        setExtractedProfile(data.profile);
+      } else {
+        console.error('[VoiceInterface] Profile extraction failed:', response.status);
+      }
+    } catch (err) {
+      console.error('[VoiceInterface] Profile extraction error:', err);
+    }
+  };
+
+  // Log status changes and chatId
   useEffect(() => {
     console.log('[VoiceInterface] Status changed:', status.value);
-  }, [status.value]);
+    if (chatId) {
+      console.log('[VoiceInterface] Chat ID:', chatId);
+    }
+  }, [status.value, chatId]);
+
+  // Load profile from localStorage on mount
+  useEffect(() => {
+    const storedProfile = localStorage.getItem(`profile_${userId}`);
+    if (storedProfile) {
+      try {
+        const parsed = JSON.parse(storedProfile);
+        setExtractedProfile(parsed);
+        console.log('[VoiceInterface] Loaded profile from localStorage:', parsed);
+      } catch (e) {
+        console.error('[VoiceInterface] Failed to parse stored profile:', e);
+      }
+    }
+  }, [userId]);
+
+  // Save profile to localStorage when updated
+  useEffect(() => {
+    if (extractedProfile && Object.keys(extractedProfile).length > 0) {
+      localStorage.setItem(`profile_${userId}`, JSON.stringify(extractedProfile));
+      console.log('[VoiceInterface] Saved profile to localStorage');
+    }
+  }, [extractedProfile, userId]);
 
   // Log when component mounts
   useEffect(() => {
@@ -206,6 +291,7 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     console.log('[VoiceInterface] accessToken length:', accessToken?.length);
     console.log('[VoiceInterface] configId:', configId);
     console.log('[VoiceInterface] sessionId:', sessionId);
+    console.log('[VoiceInterface] userId:', userId);
   }, []);
 
   // Fetch related content when user message is detected
@@ -282,8 +368,22 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
     setDisplayMessages(processed);
 
     // Fetch related content from API for each new user query
-    if (latestUserQuery) {
+    if (latestUserQuery && latestUserQuery !== lastQueryRef.current) {
+      lastQueryRef.current = latestUserQuery;
       fetchRelatedContent(latestUserQuery, processed);
+
+      // Debounce extraction - wait 3 seconds after last call to prevent rate limiting
+      if (extractionTimeoutRef.current) {
+        clearTimeout(extractionTimeoutRef.current);
+      }
+
+      const timeSinceLastExtraction = Date.now() - lastExtractionRef.current;
+      const minDelay = Math.max(0, 3000 - timeSinceLastExtraction); // At least 3 seconds between calls
+
+      extractionTimeoutRef.current = setTimeout(() => {
+        lastExtractionRef.current = Date.now();
+        extractProfile(processed);
+      }, minDelay);
     }
   }, [messages]);
 
@@ -682,6 +782,183 @@ function VoiceInterface({ accessToken, configId }: VoiceInterfaceProps) {
           `}</style>
         </div>
       )}
+
+      {/* Profile Facts Panel - shows extracted user data */}
+      {extractedProfile && Object.keys(extractedProfile).length > 0 && (
+        <div style={{
+          padding: '0 24px 24px',
+          marginTop: '16px',
+        }}>
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.15)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: '12px',
+            padding: '16px',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '12px',
+            }}>
+              <span style={{ fontSize: '16px' }}>📊</span>
+              <span style={{
+                color: '#86efac',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}>
+                Your Profile (Extracted)
+              </span>
+            </div>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}>
+              {Object.entries(extractedProfile)
+                .filter(([key, value]) => value && !['id', 'user_id', 'app_id', 'created_at', 'updated_at'].includes(key))
+                .slice(0, 8)
+                .map(([key, value]) => (
+                  <div
+                    key={key}
+                    style={{
+                      padding: '6px 12px',
+                      background: 'rgba(255,255,255,0.1)',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      color: 'white',
+                    }}
+                  >
+                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>
+                      {key.replace(/_/g, ' ')}:
+                    </span>{' '}
+                    <span style={{ fontWeight: 500 }}>
+                      {Array.isArray(value) ? value.join(', ') : String(value)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transcript Panel - Collapsible full conversation history */}
+      <div style={{
+        padding: '0 24px 24px',
+        marginTop: '16px',
+      }}>
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          borderRadius: '12px',
+          overflow: 'hidden',
+        }}>
+          {/* Header with toggle */}
+          <button
+            onClick={() => setShowTranscript(!showTranscript)}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>📝</span>
+              <span style={{
+                color: '#93c5fd',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}>
+                Conversation Transcript
+              </span>
+              <span style={{
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '12px',
+              }}>
+                ({displayMessages.length} messages)
+              </span>
+              {chatId && (
+                <span style={{
+                  color: 'rgba(255,255,255,0.3)',
+                  fontSize: '10px',
+                  marginLeft: '8px',
+                }}>
+                  ID: {chatId.substring(0, 8)}...
+                </span>
+              )}
+            </div>
+            <span style={{
+              color: 'rgba(255,255,255,0.5)',
+              transform: showTranscript ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+            }}>
+              ▼
+            </span>
+          </button>
+
+          {/* Transcript content */}
+          {showTranscript && (
+            <div style={{
+              maxHeight: '300px',
+              overflowY: 'auto',
+              padding: '0 16px 16px',
+            }}>
+              {displayMessages.length === 0 ? (
+                <p style={{
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '13px',
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                  padding: '16px',
+                }}>
+                  No messages yet. Start a conversation to see the transcript.
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {displayMessages.map((msg, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: '8px 12px',
+                        background: msg.role === 'user'
+                          ? 'rgba(147, 112, 219, 0.2)'
+                          : 'rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
+                        borderLeft: msg.role === 'user'
+                          ? '3px solid #9370DB'
+                          : '3px solid rgba(255,255,255,0.3)',
+                      }}
+                    >
+                      <div style={{
+                        fontSize: '10px',
+                        color: msg.role === 'user' ? '#c4b5fd' : 'rgba(255,255,255,0.5)',
+                        marginBottom: '4px',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                      }}>
+                        {msg.role === 'user' ? 'You' : 'Assistant'}
+                      </div>
+                      <div style={{
+                        fontSize: '13px',
+                        color: 'rgba(255,255,255,0.9)',
+                        lineHeight: 1.4,
+                      }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={transcriptEndRef} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

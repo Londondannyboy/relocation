@@ -1,16 +1,30 @@
 import type { APIRoute } from 'astro';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = import.meta.env.DATABASE_URL;
-const OPENAI_API_KEY = import.meta.env.OPENAI_API_KEY;
+// Use process.env for server-side API routes (Astro import.meta.env requires explicit config)
+const DATABASE_URL = process.env.DATABASE_URL || import.meta.env.DATABASE_URL;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || import.meta.env.GOOGLE_API_KEY || import.meta.env.GEMINI_API_KEY;
+
+console.log('[Profile Extract] API Key available:', !!GOOGLE_API_KEY, 'DB URL available:', !!DATABASE_URL);
 
 const sql = neon(DATABASE_URL);
 
-// Initialize OpenAI for extraction
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
+// Initialize Gemini for extraction - create fresh each time to ensure env is read
+function getModel() {
+  // Read env at runtime, not bundle time
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.error('[Profile Extract] No API key found in process.env');
+    return null;
+  }
+
+  console.log('[Profile Extract] Creating Gemini model with key:', apiKey.substring(0, 10) + '...');
+  const genAI = new GoogleGenerativeAI(apiKey);
+  // Use gemini-2.0-flash (standard version, not exp - has reasonable rate limits)
+  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+}
 
 // Profile schema - Pydantic-style validation
 interface UserProfile {
@@ -119,19 +133,27 @@ ${existingProfile ? `\nExisting profile data (only update fields with NEW inform
 Return ONLY valid JSON. No markdown, no explanation.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Extract profile data from this conversation:\n\n${conversationText}` }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.1,
+    const geminiModel = getModel();
+    if (!geminiModel) {
+      console.error('[Profile Extract] Gemini model not available - missing API key');
+      return {};
+    }
+
+    const prompt = `${systemPrompt}\n\nExtract profile data from this conversation:\n\n${conversationText}`;
+
+    const result = await geminiModel.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+      },
     });
 
-    const content = response.choices[0]?.message?.content;
+    const content = result.response.text();
     if (content) {
-      return JSON.parse(content);
+      // Clean up response - remove markdown code blocks if present
+      const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cleaned);
     }
   } catch (err) {
     console.error('[Profile Extract] AI extraction error:', err);
@@ -254,25 +276,80 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Get existing profile
-    const existingResult = await sql`
-      SELECT * FROM user_profiles WHERE user_id = ${user_id}
-    `;
-    const existingProfile = existingResult[0] as UserProfile | undefined;
-
-    // Extract new profile data from conversation
+    // Extract profile data from conversation
     let extractedProfile: Partial<UserProfile> = {};
     if (messages && messages.length > 0) {
-      extractedProfile = await extractProfileFromConversation(messages, existingProfile);
+      extractedProfile = await extractProfileFromConversation(messages);
+      console.log('[Profile Extract] Extracted:', extractedProfile);
     }
 
-    // Merge and upsert
+    // Try to get existing profile
+    let existingProfile: UserProfile | undefined;
+    try {
+      const existingResult = await sql`
+        SELECT * FROM user_profiles WHERE user_id = ${user_id}
+      `;
+      existingProfile = existingResult[0] as UserProfile | undefined;
+    } catch (err) {
+      console.log('[Profile Extract] Could not fetch existing profile:', err);
+    }
+
+    // Merge extracted with existing
     const mergedProfile = { ...existingProfile, ...extractedProfile };
-    const savedProfile = await upsertProfile(user_id, app_id, mergedProfile);
+
+    // Save to database using simple upsert
+    try {
+      if (Object.keys(extractedProfile).length > 0) {
+        // Convert arrays to PostgreSQL text[] format (pass as raw arrays, neon handles it)
+        const destCountries = mergedProfile.destination_countries || null;
+        const motivation = mergedProfile.relocation_motivation || null;
+        const passports = mergedProfile.passport_countries || null;
+        const languages = mergedProfile.language_requirements || null;
+
+        await sql`
+          INSERT INTO user_profiles (
+            user_id, app_id, current_country, current_city, nationality,
+            destination_countries, relocation_priority, employment_status,
+            remote_work, industry, job_title, budget_monthly,
+            relocation_motivation, timeline, passport_countries,
+            language_requirements, climate_preference,
+            created_at, updated_at
+          ) VALUES (
+            ${user_id}, ${app_id}, ${mergedProfile.current_country || null}, ${mergedProfile.current_city || null}, ${mergedProfile.nationality || null},
+            ${destCountries}, ${mergedProfile.relocation_priority || null}, ${mergedProfile.employment_status || null},
+            ${mergedProfile.remote_work || null}, ${mergedProfile.industry || null}, ${mergedProfile.job_title || null}, ${mergedProfile.budget_monthly || null},
+            ${motivation}, ${mergedProfile.timeline || null}, ${passports},
+            ${languages}, ${mergedProfile.climate_preference || null},
+            NOW(), NOW()
+          )
+          ON CONFLICT (user_id) DO UPDATE SET
+            current_country = COALESCE(EXCLUDED.current_country, user_profiles.current_country),
+            current_city = COALESCE(EXCLUDED.current_city, user_profiles.current_city),
+            nationality = COALESCE(EXCLUDED.nationality, user_profiles.nationality),
+            destination_countries = COALESCE(EXCLUDED.destination_countries, user_profiles.destination_countries),
+            relocation_priority = COALESCE(EXCLUDED.relocation_priority, user_profiles.relocation_priority),
+            employment_status = COALESCE(EXCLUDED.employment_status, user_profiles.employment_status),
+            remote_work = COALESCE(EXCLUDED.remote_work, user_profiles.remote_work),
+            industry = COALESCE(EXCLUDED.industry, user_profiles.industry),
+            job_title = COALESCE(EXCLUDED.job_title, user_profiles.job_title),
+            budget_monthly = COALESCE(EXCLUDED.budget_monthly, user_profiles.budget_monthly),
+            relocation_motivation = COALESCE(EXCLUDED.relocation_motivation, user_profiles.relocation_motivation),
+            timeline = COALESCE(EXCLUDED.timeline, user_profiles.timeline),
+            passport_countries = COALESCE(EXCLUDED.passport_countries, user_profiles.passport_countries),
+            language_requirements = COALESCE(EXCLUDED.language_requirements, user_profiles.language_requirements),
+            climate_preference = COALESCE(EXCLUDED.climate_preference, user_profiles.climate_preference),
+            updated_at = NOW()
+        `;
+        console.log('[Profile Extract] Saved to database for user:', user_id);
+      }
+    } catch (dbErr) {
+      console.error('[Profile Extract] DB save error:', dbErr);
+      // Continue - don't fail the request if DB save fails
+    }
 
     return new Response(JSON.stringify({
       success: true,
-      profile: savedProfile,
+      profile: mergedProfile,
       extracted: extractedProfile,
     }), {
       status: 200,
