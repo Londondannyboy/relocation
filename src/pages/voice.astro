@@ -1,7 +1,8 @@
 ---
 import SEO from '../components/SEO.astro';
-import HumeVoiceInterface from '../components/HumeVoiceInterface';
+import HumeVoiceWithAuth from '../components/HumeVoiceWithAuth';
 import UserIndicator from '../components/UserIndicator';
+import LiveGraphWrapper from '../components/LiveGraphWrapper';
 ---
 
 <!DOCTYPE html>
@@ -75,7 +76,34 @@ import UserIndicator from '../components/UserIndicator';
 
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 1200px;
+    }
+
+    .voice-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .voice-section {
+      min-width: 0;
+    }
+
+    .graph-section {
+      position: sticky;
+      top: 24px;
+    }
+
+    @media (max-width: 1000px) {
+      .voice-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .graph-section {
+        position: static;
+        order: -1;
+      }
     }
 
     .page-header {
@@ -135,8 +163,18 @@ import UserIndicator from '../components/UserIndicator';
         <p>Speak with our AI about international relocation</p>
       </div>
 
-      <!-- React Voice Interface Component -->
-      <HumeVoiceInterface client:load />
+      <!-- Two column layout -->
+      <div class="voice-layout">
+        <!-- Voice Interface with Auth -->
+        <div class="voice-section">
+          <HumeVoiceWithAuth client:load />
+        </div>
+
+        <!-- Live Knowledge Graph -->
+        <div class="graph-section">
+          <LiveGraphWrapper client:load compact={true} isActive={true} />
+        </div>
+      </div>
     </div>
   </main>
 </body>

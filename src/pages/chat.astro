@@ -1,6 +1,6 @@
 ---
 import SEO from '../components/SEO.astro';
-import HumeVoiceInterface from '../components/HumeVoiceInterface';
+import HumeVoiceWithAuth from '../components/HumeVoiceWithAuth';
 ---
 
 <!DOCTYPE html>
@@ -142,10 +142,10 @@ import HumeVoiceInterface from '../components/HumeVoiceInterface';
       <a href="/companies" class="btn btn-primary">Find Relocation Services →</a>
     </div>
 
-    <!-- Hume Voice Interface Test -->
+    <!-- Hume Voice Interface Test with Auth -->
     <div class="test-section">
       <h2 class="section-title">Test: Hume Voice Interface</h2>
-      <HumeVoiceInterface client:load />
+      <HumeVoiceWithAuth client:load />
     </div>
   </div>
 </body>

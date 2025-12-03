@@ -416,48 +416,52 @@ const quickStats = [
 
   <!-- Content Mode Toggle (Story/Guide/YOLO/Voices) -->
   {hasContentModes && (
-    <div class="bg-gray-50 border-b border-gray-200 sticky top-0 z-40">
+    <div class="bg-gradient-to-r from-amber-50 via-white to-orange-50 border-b border-amber-100 sticky top-0 z-40">
       <div class="max-w-4xl mx-auto px-4 py-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reading Mode</span>
-          <div class="flex gap-1 bg-gray-200 rounded-lg p-1" id="content-mode-toggle">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:block">Reading Mode</span>
+          <div class="flex flex-wrap gap-2" id="content-mode-toggle">
             <button
               data-mode="story"
-              class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all bg-white text-gray-900 shadow-sm"
+              class="mode-btn relative px-4 py-2 text-sm font-semibold rounded-lg transition-all overflow-hidden"
+              style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;"
               onclick="switchMode('story')"
             >
-              Story
+              <span class="relative z-10">📖 Narrative</span>
             </button>
             {contentModes.guide && (
               <button
                 data-mode="guide"
-                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                class="mode-btn relative px-4 py-2 text-sm font-semibold rounded-lg transition-all overflow-hidden"
+                style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white;"
                 onclick="switchMode('guide')"
               >
-                Guide
+                <span class="relative z-10">📋 Practical Guide</span>
               </button>
             )}
             {contentModes.yolo && (
               <button
                 data-mode="yolo"
-                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                class="mode-btn relative px-4 py-2 text-sm font-semibold rounded-lg transition-all overflow-hidden"
+                style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); color: white;"
                 onclick="switchMode('yolo')"
               >
-                YOLO
+                <span class="relative z-10">🚀 Adventure</span>
               </button>
             )}
             {voices.length > 0 && (
               <button
                 data-mode="voices"
-                class="mode-btn px-4 py-2 text-sm font-medium rounded-md transition-all text-gray-600 hover:text-gray-900"
+                class="mode-btn relative px-4 py-2 text-sm font-semibold rounded-lg transition-all overflow-hidden"
+                style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white;"
                 onclick="switchMode('voices')"
               >
-                Voices ({voices.length})
+                <span class="relative z-10">💬 Expat Stories</span>
               </button>
             )}
           </div>
         </div>
-        <p class="text-xs text-gray-400 mt-1" id="mode-description">
+        <p class="text-xs text-gray-500 mt-2 hidden sm:block" id="mode-description">
           Narrative journey through relocation
         </p>
       </div>

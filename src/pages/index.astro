@@ -2,7 +2,7 @@
 import { sql } from '../lib/db';
 import SEO from '../components/SEO.astro';
 import Schema from '../components/Schema.astro';
-import HumeVoiceInterface from '../components/HumeVoiceInterface';
+import HumeVoiceWithAuth from '../components/HumeVoiceWithAuth';
 
 // Fetch homepage content
 const homepageContent = await sql`
@@ -737,10 +737,10 @@ const muxPlaybackId = 'qIS6PGKxIZyzjrDBzxQuqPRBOhHofDnXq1chdsqAY9Y';
         </p>
       </div>
 
-      <!-- Voice Widget Container -->
+      <!-- Voice Widget Container with Auth -->
       <div style="display: grid; grid-template-columns: 1fr; gap: 32px; max-width: 600px; margin: 0 auto;">
         <div style="min-height: 400px;">
-          <HumeVoiceInterface client:visible />
+          <HumeVoiceWithAuth client:visible />
         </div>
       </div>
 

@@ -4,6 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 interface HumeVoiceInterfaceProps {
   apiUrl?: string;
   configId?: string;
+  user?: {
+    id?: string;
+    displayName?: string | null;
+    primaryEmail?: string | null;
+  } | null;
 }
 
 // Hume config ID for the relocation assistant
@@ -25,7 +30,8 @@ function getUserId(): string {
 
 export default function HumeVoiceInterface({
   apiUrl = 'https://quest-gateway-production.up.railway.app',
-  configId = HUME_CONFIG_ID
+  configId = HUME_CONFIG_ID,
+  user = null
 }: HumeVoiceInterfaceProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,15 +139,25 @@ export default function HumeVoiceInterface({
     );
   }
 
-  console.log('[HumeVoiceInterface] Rendering with userId:', userId);
+  // Use authenticated user ID if available, otherwise fall back to localStorage ID
+  const effectiveUserId = user?.id || userId;
+  // Get first name for personalized greeting
+  const userName = user?.displayName?.split(' ')[0] || 'there';
 
-  // Connected - render VoiceProvider with customSessionId for user tracking
+  console.log('[HumeVoiceInterface] Rendering with userId:', effectiveUserId, 'userName:', userName);
+
+  // Connected - render VoiceProvider with customSessionId and dynamic variables
   return (
     <VoiceProvider
       auth={{ type: 'accessToken', value: accessToken }}
       configId={configId}
       sessionSettings={{
-        customSessionId: userId,  // Pass user ID to Hume for tracking
+        customSessionId: effectiveUserId,  // Pass user ID to Hume for tracking
+        variables: {
+          name: userName,
+          user_id: effectiveUserId,
+          email: user?.primaryEmail || '',
+        },
       }}
       onMessage={(message) => {
         console.log('[Hume] Message:', message);
@@ -150,7 +166,7 @@ export default function HumeVoiceInterface({
         console.error('[Hume] Error:', err);
       }}
     >
-      <VoiceInterface accessToken={accessToken} configId={configId} userId={userId} />
+      <VoiceInterface accessToken={accessToken} configId={configId} userId={effectiveUserId} />
     </VoiceProvider>
   );
 }

@@ -316,12 +316,26 @@ const canonicalUrl = `https://relocation.quest/hubs/${hub.slug}`;
         <a href="/" class="text-xl font-bold">
           <span class="text-gray-900">Relocation</span><span class="text-amber-500">Quest</span>
         </a>
-        <div class="flex items-center space-x-6">
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center space-x-6">
           <a href="/" class="text-gray-600 hover:text-gray-900 font-medium">Home</a>
           <a href="/guides" class="text-amber-600 font-semibold">Guides</a>
           <a href="/articles" class="text-gray-600 hover:text-gray-900 font-medium">Articles</a>
           <a href="/companies" class="text-gray-600 hover:text-gray-900 font-medium">Companies</a>
         </div>
+        <!-- Mobile Hamburger -->
+        <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 text-gray-600 hover:text-gray-900">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="hidden md:hidden pt-4 pb-2 space-y-2">
+        <a href="/" class="block py-2 text-gray-600 hover:text-gray-900 font-medium">Home</a>
+        <a href="/guides" class="block py-2 text-amber-600 font-semibold">Guides</a>
+        <a href="/articles" class="block py-2 text-gray-600 hover:text-gray-900 font-medium">Articles</a>
+        <a href="/companies" class="block py-2 text-gray-600 hover:text-gray-900 font-medium">Companies</a>
       </div>
     </div>
   </nav>

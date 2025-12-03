@@ -29,37 +29,69 @@ interface VoiceWithUIInnerProps {
   } | null;
 }
 
+// User profile from Neon database
+interface UserProfile {
+  current_country?: string;
+  destination_countries?: string[];
+  nationality?: string;
+  employment_status?: string;
+  remote_work?: boolean;
+  industry?: string;
+  job_title?: string;
+  budget_monthly?: number;
+  timeline?: string;
+  relocation_motivation?: string[];
+}
+
 function VoiceWithUIInner({ user }: VoiceWithUIInnerProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionId] = useState(() => getSessionId());
 
-  // Fetch access token
+  // Fetch access token AND user profile from Neon
   useEffect(() => {
-    async function fetchAccessToken() {
+    async function initialize() {
       try {
-        const response = await fetch(`${GATEWAY_URL}/voice/access-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
+        // Fetch access token and profile in parallel
+        const [tokenResponse, profileResponse] = await Promise.all([
+          fetch(`${GATEWAY_URL}/voice/access-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          // Only fetch profile if we have a user ID
+          user?.id
+            ? fetch(`/api/profile/extract?user_id=${encodeURIComponent(user.id)}`)
+            : Promise.resolve(null),
+        ]);
 
-        if (!response.ok) {
-          throw new Error(`Failed to get access token: ${response.status}`);
+        if (!tokenResponse.ok) {
+          throw new Error(`Failed to get access token: ${tokenResponse.status}`);
         }
 
-        const data = await response.json();
-        setAccessToken(data.accessToken);
+        const tokenData = await tokenResponse.json();
+        setAccessToken(tokenData.accessToken);
+
+        // Load profile if available
+        if (profileResponse && profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          if (profileData.profile) {
+            console.log('[VoiceWithUI] Loaded user profile from Neon:', profileData.profile);
+            setUserProfile(profileData.profile);
+          }
+        }
+
         setIsLoading(false);
       } catch (err) {
-        console.error('[VoiceWithUI] Error fetching access token:', err);
+        console.error('[VoiceWithUI] Error initializing:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize');
         setIsLoading(false);
       }
     }
 
-    fetchAccessToken();
-  }, []);
+    initialize();
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -116,12 +148,43 @@ function VoiceWithUIInner({ user }: VoiceWithUIInnerProps) {
 
   console.log('[VoiceWithUI] Connecting with customSessionId:', humeUserId);
 
+  // Get the user's first name for personalized greeting
+  const userName = user?.displayName?.split(' ')[0] || 'there';
+
+  // Build dynamic variables from auth + Neon profile
+  const humeVariables: Record<string, string> = {
+    name: userName,
+    user_id: user?.id || sessionId,
+    email: user?.primaryEmail || '',
+  };
+
+  // Add profile data from Neon database if available
+  if (userProfile) {
+    if (userProfile.current_country) humeVariables.current_country = userProfile.current_country;
+    if (userProfile.destination_countries?.length) {
+      humeVariables.destination_countries = userProfile.destination_countries.join(', ');
+    }
+    if (userProfile.nationality) humeVariables.nationality = userProfile.nationality;
+    if (userProfile.employment_status) humeVariables.employment_status = userProfile.employment_status;
+    if (userProfile.remote_work !== undefined) humeVariables.remote_work = userProfile.remote_work ? 'yes' : 'no';
+    if (userProfile.industry) humeVariables.industry = userProfile.industry;
+    if (userProfile.job_title) humeVariables.job_title = userProfile.job_title;
+    if (userProfile.budget_monthly) humeVariables.budget = `$${userProfile.budget_monthly}/month`;
+    if (userProfile.timeline) humeVariables.timeline = userProfile.timeline;
+    if (userProfile.relocation_motivation?.length) {
+      humeVariables.motivations = userProfile.relocation_motivation.join(', ');
+    }
+  }
+
+  console.log('[VoiceWithUI] Setting up session with variables:', humeVariables);
+
   return (
     <VoiceProvider
       auth={{ type: 'accessToken', value: accessToken }}
       configId={HUME_CONFIG_ID}
       sessionSettings={{
         customSessionId: humeUserId,
+        variables: humeVariables,
       }}
     >
       <CombinedInterface
