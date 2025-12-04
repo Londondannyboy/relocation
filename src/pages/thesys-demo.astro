@@ -1,0 +1,91 @@
+---
+import ThesysClearDemo from '../components/ThesysClearDemo';
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thesys C1 Demo - See Generative UI in Action</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+      min-height: 100vh;
+    }
+
+    nav {
+      background: #fff;
+      padding: 16px 32px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-brand {
+      font-weight: 800;
+      font-size: 18px;
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: #374151;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #667eea;
+    }
+
+    .info-banner {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 12px 32px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .info-banner a {
+      color: #fff;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="nav-brand">Relocation.Quest</a>
+    <ul class="nav-links">
+      <li><a href="/">Home</a></li>
+      <li><a href="/thesys-test">Full Test</a></li>
+      <li><a href="/chat">Chat</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+  </nav>
+
+  <div class="info-banner">
+    This demo shows Thesys C1 generating interactive UI components.
+    See the rendered UI on the left and raw response on the right.
+    <a href="https://docs.thesys.dev" target="_blank">Learn more about Thesys</a>
+  </div>
+
+  <ThesysClearDemo client:only="react" />
+</body>
+</html>
