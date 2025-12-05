@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { C1Component, ThemeProvider } from '@thesysai/genui-sdk';
-import '@crayonai/react-ui/styles/index.css';
+// Removed: import '@crayonai/react-ui/styles/index.css'; - not installed
 
 export default function ThesysClearDemo() {
   const [rawResponse, setRawResponse] = useState('');
