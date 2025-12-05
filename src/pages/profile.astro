@@ -1,6 +1,6 @@
 ---
-// Profile page - shows authenticated user info
-import UserProfile from '../components/UserProfile';
+import SEO from '../components/SEO.astro';
+import LightProfile from '../components/LightProfile';
 
 export const prerender = false;
 ---
@@ -8,62 +8,23 @@ export const prerender = false;
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Relocation Quest</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: #f5f5f5;
-            min-height: 100vh;
-        }
-        .container {
-            background: white;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .user-info {
-            margin: 1rem 0;
-            padding: 1rem;
-            background: #f9f9f9;
-            border-radius: 4px;
-        }
-        button {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 1rem;
-        }
-        button:hover {
-            background: #b91c1c;
-        }
-        a {
-            color: #0070f3;
-            text-decoration: none;
-        }
-        .btn {
-            display: inline-block;
-            background: #0070f3;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
-            text-decoration: none;
-            margin-top: 1rem;
-        }
-        .btn:hover {
-            background: #0051cc;
-        }
-    </style>
+  <SEO
+    title="Your Profile | Relocation.Quest"
+    description="Manage your relocation profile, preferences, and saved destinations."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-    <UserProfile client:only="react" />
+  <LightProfile client:only="react" />
 </body>
 </html>
