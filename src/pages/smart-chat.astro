@@ -1,0 +1,41 @@
+---
+import SEO from '../components/SEO.astro';
+import SmartChat from '../components/SmartChat';
+
+export const prerender = false;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <SEO
+    title="AI Relocation Assistant | Relocation.Quest"
+    description="Chat with our AI-powered relocation assistant. Get personalized advice on visas, cost of living, and everything you need to know about relocating abroad."
+  />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8f9fa;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* Prevent iOS rubber-banding */
+    body {
+      position: fixed;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <SmartChat client:only="react" />
+</body>
+</html>
